@@ -1,0 +1,10 @@
+black==21.10b0
+# https://github.com/LEW21/pydbus
+pydbus==0.6.0
+
+# instead used: 
+    # virtualenv  .venv --system-site-packages
+
+# https://stackoverflow.com/questions/26678457/how-do-i-install-python3-gi-within-virtualenv
+# vext
+# vext.gi

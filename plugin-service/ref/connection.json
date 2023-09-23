@@ -1,0 +1,44 @@
+{
+    "connection": {
+        "id": "vpn-test",
+        "permissions": [
+            "user:dummy:"
+        ],
+        "type": "vpn",
+        "uuid": "6bf0e892-4eb5-476c-ac22-ab89c45d231a"
+    },
+    "vpn": {
+        "data": {
+            "auth-type": "password",
+            "local-ip": "10.168.2.100",
+            "netmask": "24",
+            "password-flags": "1",
+            "port": "22",
+            "remote": "192.168.160.119",
+            "remote-ip": "10.168.2.119"
+        },
+        "secrets": {},
+        "service-type": "org.freedesktop.NetworkManager.test"
+    },
+    "ipv4": {
+        "address-data": [],
+        "addresses": [],
+        "dns": [],
+        "dns-search": [],
+        "may-fail": false,
+        "method": "auto",
+        "never-default": true,
+        "route-data": [],
+        "routes": []
+    },
+    "ipv6": {
+        "address-data": [],
+        "addresses": [],
+        "dns": [],
+        "dns-search": [],
+        "method": "auto",
+        "route-data": [],
+        "routes": []
+    },
+    "proxy": {}
+}

@@ -1,0 +1,43 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "/usr/include/",
+                "/usr/include/atk-1.0",
+                "/usr/include/cairo",
+                "/usr/include/gdk-pixbuf-2.0",
+                "/usr/include/glib-2.0",
+                "/usr/include/gtk-3.0",
+                "/usr/include/harfbuzz",
+                "/usr/include/json-glib-1.0",
+                "/usr/include/KF5/**",
+                "/usr/include/libnm",
+                "/usr/include/pango-1.0",
+                "/usr/include/qt/**",
+                "/usr/lib/glib-2.0/include"
+            ],
+            "defines": [
+                // "_GNU_SOURCE",
+                "NM_VPN_PROVIDER_ID=\"\"",
+                "NM_VPN_PROVIDER_LABEL=\"\"",
+                "NM_VPN_PROVIDER_DESCRIPTION=\"\"",
+                "NM_VPN_PROVIDER_DBUS_SERVICE=\"\"",
+                "NM_VPN_PROVIDER_INPUT_FORM_JSON=\"\""
+            ],
+            "cStandard": "c17",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "linux-clang-x64",
+            "mergeConfigurations": false,
+            "compilerPath": "/usr/bin/clang",
+            "browse": {
+                "path": [
+                    "${workspaceFolder}"
+                ],
+                "limitSymbolsToIncludedHeaders": true
+            }
+        }
+    ],
+    "version": 4
+}

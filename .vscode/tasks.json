@@ -1,0 +1,12 @@
+{
+    "tasks": [
+        {
+            "label": "build-gtk",
+            "command": "make",
+            "args": [
+                "build-gtk"
+            ],
+        }
+    ],
+    "version": "2.0.0"
+}

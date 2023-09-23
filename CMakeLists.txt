@@ -1,0 +1,124 @@
+cmake_minimum_required(VERSION 3.16)
+
+project(networkmanager-vpn-bundle)
+
+set(PROJECT_VERSION "0.0.1")
+set(PROJECT_VERSION_MAJOR 0)
+set(PROJECT_HOMEPAGE_URL "https://github.com/nom3ad/NetworkManager-vpn-bundle")
+
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+set(CMAKE_C_EXTENSIONS ON)
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+set(CMAKE_COLOR_DIAGNOSTICS ON)
+
+add_compile_options(-Wno-deprecated)
+
+# ------- install paths ---------------------------
+set(NM_LIB_DIR /usr/lib/NetworkManager)
+set(NM_VPN_SERVICE_DIR ${NM_LIB_DIR}/VPN)
+set(DBUS_CONF_DIR /usr/share/dbus-1/system.d)
+
+set(NM_VPN_BUNDLE_INSTALL_DIR ${NM_LIB_DIR}/vpn-bundle)
+set(NM_VPM_PROVIDER_PLUGIN_SERVICE_DIR ${NM_VPN_BUNDLE_INSTALL_DIR}/plugin-service)
+set(NM_VPM_BUNDLE_GTK_BIN_DIR ${NM_VPN_BUNDLE_INSTALL_DIR})
+
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(NETWORKMANAGER IMPORTED_TARGET libnm>1.4.0 REQUIRED)
+
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
+include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/common)
+
+add_compile_definitions(
+  GETTEXT_PACKAGE="NetworkManager-VPN-bundle"
+  TRANSLATION_DOMAIN="NetworkManager-VPN-bundle"
+)
+
+set(PROVIDER_ID_LIST)
+
+file(GLOB _PROVIDER_DEFINITION_FILE LIST_DIRECTORIES true "providers/*.json")
+foreach(_P_JSON_FILE ${_PROVIDER_DEFINITION_FILE})
+  file(READ ${_P_JSON_FILE} _P_JSON_STRING)
+  string(JSON NM_VPN_PROVIDER_ID GET ${_P_JSON_STRING} "id")
+  list(APPEND PROVIDER_ID_LIST ${NM_VPN_PROVIDER_ID})
+  string(JSON NM_VPN_PROVIDER_LABEL GET ${_P_JSON_STRING} "label")
+  string(JSON NM_VPN_PROVIDER_DESCRIPTION GET ${_P_JSON_STRING} "description")
+  set(NM_VPN_PROVIDER_DBUS_SERVICE "org.freedesktop.NetworkManager.${NM_VPN_PROVIDER_ID}")
+  string(JSON NM_VPN_PROVIDER_INPUT_FORM_JSON GET ${_P_JSON_STRING} "form")
+  string(REPLACE "\\" "\\\\" NM_VPN_PROVIDER_INPUT_FORM_JSON ${NM_VPN_PROVIDER_INPUT_FORM_JSON})
+  string(REPLACE "\n" "\\n" NM_VPN_PROVIDER_INPUT_FORM_JSON ${NM_VPN_PROVIDER_INPUT_FORM_JSON})
+  string(REPLACE "\t" "\\n" NM_VPN_PROVIDER_INPUT_FORM_JSON ${NM_VPN_PROVIDER_INPUT_FORM_JSON})
+  string(REPLACE "\"" "\\\"" NM_VPN_PROVIDER_INPUT_FORM_JSON ${NM_VPN_PROVIDER_INPUT_FORM_JSON})
+
+  # message(">>> NM_VPN_PROVIDER_INPUT_FORM_JSON: ${NM_VPN_PROVIDER_INPUT_FORM_JSON}")
+
+  message(">>> Found VPN provider: ${NM_VPN_PROVIDER_ID}")
+
+  add_compile_definitions(NM_VPN_PROVIDER_ID="${NM_VPN_PROVIDER_ID}")
+  add_compile_definitions(NM_VPN_PROVIDER_LABEL="${NM_VPN_PROVIDER_LABEL}")
+  add_compile_definitions(NM_VPN_PROVIDER_DESCRIPTION="${NM_VPN_PROVIDER_DESCRIPTION}")
+  add_compile_definitions(NM_VPN_PROVIDER_DBUS_SERVICE="${NM_VPN_PROVIDER_DBUS_SERVICE}")
+  add_compile_definitions(NM_VPN_PROVIDER_INPUT_FORM_JSON="${NM_VPN_PROVIDER_INPUT_FORM_JSON}")
+
+  add_subdirectory("property-editor")
+  find_package(ECM QUIET)
+  if(${ECM_FOUND})
+      message(">>> ECM found. May be KDE?")
+      add_subdirectory("plasma-nm-applet-ui")
+  else()
+      message(">>> ECM not found. May be GNOME?")
+  endif()
+
+  configure_file("nm-xxx-service.name.in" "nm-${NM_VPN_PROVIDER_ID}-service.name" @ONLY)
+  configure_file("nm-xxx-service.conf.in" "nm-${NM_VPN_PROVIDER_ID}-service.conf" @ONLY)
+  
+  install(FILES "${CMAKE_CURRENT_BINARY_DIR}/nm-${NM_VPN_PROVIDER_ID}-service.name" DESTINATION ${NM_VPN_SERVICE_DIR})
+  install(FILES  "${CMAKE_CURRENT_BINARY_DIR}/nm-${NM_VPN_PROVIDER_ID}-service.conf" DESTINATION ${DBUS_CONF_DIR})
+endforeach()
+
+
+add_subdirectory("auth-dialog")
+
+# file(COPY plugin-service DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/plugin-service)
+
+
+install(DIRECTORY plugin-service/ DESTINATION ${NM_VPM_PROVIDER_PLUGIN_SERVICE_DIR}
+    #USE_SOURCE_PERMISSIONS
+    PATTERN "__pycache__" EXCLUDE
+    PATTERN "ref" EXCLUDE
+    PATTERN "provider-exec" EXCLUDE
+)
+
+foreach(_P_ID ${PROVIDER_ID_LIST})
+  install(PROGRAMS plugin-service/provider-exec DESTINATION ${NM_VPM_PROVIDER_PLUGIN_SERVICE_DIR} RENAME nm-${_P_ID}-service)
+endforeach()
+
+
+
+# ---- CPack ----
+
+# https://cmake.org/cmake/help/latest/cpack_gen/deb.html
+find_program(DEB_BUILD "dpkg")
+IF(DEB_BUILD)
+message(">>> Found dpkg. DEB package will be generated.")
+   list(APPEND CPACK_GENERATOR "DEB")
+ENDIF()
+# https://cmake.org/cmake/help/latest/cpack_gen/rpm.html
+find_program(RPM_BUILD "rpmbuild")
+IF(RPM_BUILD)
+  message(">>> Found rpmbuild. RPM package will be generated.")
+   list(APPEND CPACK_GENERATOR "RPM")
+ENDIF()
+set(CPACK_PACKAGE_NAME "networkmanager-vpn-bundle")
+set(CPACK_PACKAGE_DESCRIPTION "Collection of many 3rdparty VPN support for NetworkManager")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "libnm0 (>= 1.1.90), libc6 (>= 2.4), libglib2.0-0 (>= 2.24.0), libgtk-3-0 (>= 3.0.0), python3-pydbus")
+set(CPACK_DEBIAN_PACKAGE_MAINTAINER "nom3ad") #required
+set(CPACK_RPM_PACKAGE_LICENSE "MIT") 
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY ${CPACK_PACKAGE_DESCRIPTION}) 
+set(CPACK_RPM_PACKAGE_REQUIRES "libnm, python-pydbus") 
+
+INCLUDE(CPack)

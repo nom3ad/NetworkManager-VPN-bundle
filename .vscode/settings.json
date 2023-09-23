@@ -1,0 +1,15 @@
+{
+    "[python]": {
+        "editor.defaultFormatter": "ms-python.black-formatter",
+        "editor.formatOnSave": true
+    },
+    "black-formatter.args": [
+        "-line-length=120"
+    ],
+    "cmake.configureOnOpen": true,
+    "cmake.preferredGenerators": [
+        "Ninja",
+        "Unix Makefiles",
+    ],
+    "cmake.configureOnEdit": false,
+}

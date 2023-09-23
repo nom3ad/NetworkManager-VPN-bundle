@@ -1,0 +1,124 @@
+{
+    "id": "tailscale",
+    "label": "Tailscale VPN",
+    "description": "Tailscale is a mesh VPN. (https://tailscale.com/)",
+    "form": [
+        {
+            "section": "Basic",
+            "inputs": [
+                {
+                    "id": "hostname",
+                    "type": "string",
+                    "label": "Hostname",
+                    "description": "Hostname to use instead of the one provided by the OS",
+                    "placeholder": "<OS Provided>",
+                    "required": false
+                },
+                {
+                    "id": "advertise-routes",
+                    "type": "string",
+                    "label": "Routes to Advertise",
+                    "description": "Routes to advertise to other nodes (comma-separated, e.g. 10.0.0.0/8,192.168.0.0/24) or empty string to not advertise routes",
+                    "required": false
+                },
+                {
+                    "id": "is-snat-subnet-routes",
+                    "type": "boolean",
+                    "label": "Source NAT to advertised local routes",
+                    "description": "Source NAT traffic to local routes advertised with --advertise-route",
+                    "default": false,
+                    "required": false
+                },
+                {
+                    "id": "advertise-tags",
+                    "type": "string",
+                    "label": "ACL Tags",
+                    "description": "Comma-separated ACL tags to request; each must start with \"tag:\" (e.g. tag:eng,tag:montreal,tag:ssh)",
+                    "regex": "^(tag:\\w+)?(,tag:\\w+)+)$",
+                    "required": false
+                },
+                {
+                    "id": "is-accept-dns",
+                    "type": "boolean",
+                    "label": "Accept DNS from Admin",
+                    "description": "Accept DNS configuration from the admin pane",
+                    "default": false,
+                    "required": false
+                },
+                {
+                    "id": "is-accept-routes",
+                    "type": "boolean",
+                    "label": "Accept advertised routes",
+                    "description": "Accept routes advertised by other Tailscale nodes",
+                    "default": false,
+                    "required": false
+                },
+                {
+                    "id": "exit-node",
+                    "type": "string",
+                    "label": "Exit node",
+                    "description": "Tailscale exit node (IP or base name) for internet traffic, or leave empty to not use an exit node",
+                    "default": false,
+                    "required": false,
+                    "regex": "^(?=.{1,255}$)[0-9A-Za-z](?:(?:[0-9A-Za-z]|-){0,61}[0-9A-Za-z])?(?:\\.[0-9A-Za-z](?:(?:[0-9A-Za-z]|-){0,61}[0-9A-Za-z])?)*\\.?$"
+                }
+            ]
+        },
+        {
+            "section": "Advanced",
+            "inputs": [
+                {
+                    "id": "is-ssh",
+                    "type": "boolean",
+                    "label": "Run SSH server",
+                    "description": "Run an SSH server, permitting access per tailnet admin's declared policy",
+                    "default": false,
+                    "required": false
+                },
+                {
+                    "id": "is-advertise-exit-node",
+                    "type": "boolean",
+                    "label": "Advertise as Exit Node",
+                    "description": "Offer to be an exit node for internet traffic for the tailnet",
+                    "default": false,
+                    "required": false
+                },
+                {
+                    "id": "is-exit-node-allow-lan-access=false",
+                    "type": "boolean",
+                    "label": "Expose LAN via Exit Node",
+                    "description": " Allow direct access to the local network when routing traffic via an exit node",
+                    "default": false,
+                    "required": false
+                },
+                {
+                    "id": "tun-device-name",
+                    "type": "string",
+                    "label": "TUN Device Name",
+                    "description": "Name of the TUN device to create; must be an unused interface name",
+                    "min_length": 1,
+                    "max_length": 15,
+                    "required": false
+                },
+                {
+                    "id": "listening-port",
+                    "type": "integer",
+                    "label": "Listening Port",
+                    "description": "UDP port to listen on for WireGuard and peer-to-peer traffic; 0 means automatically select",
+                    "default": 0,
+                    "min_value": 0,
+                    "max_value": 65535,
+                    "required": false
+                },
+                {
+                    "id": "control-server",
+                    "type": "string",
+                    "label": "Control Server",
+                    "description": "Base URL of control server (default https://controlplane.tailscale.com)",
+                    "placeholder": "https://controlplane.tailscale.com",
+                    "required": false
+                }
+            ]
+        }
+    ]
+}
