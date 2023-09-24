@@ -20,6 +20,8 @@
 
 #include "settingwidget.h"
 
+#include "nm-connection.h"
+
 /**
  * Plugin for UI elements for VPN configuration
  */
@@ -32,8 +34,8 @@ public:
     explicit VpnUiPlugin(QObject *parent = nullptr, const QVariantList & = QVariantList());
     ~VpnUiPlugin() override;
 
-    virtual SettingWidget *widget(const NetworkManager::VpnSetting::Ptr &setting, QWidget *parent = nullptr) = 0;
-    virtual SettingWidget *askUser(const NetworkManager::VpnSetting::Ptr &setting, const QStringList &hints, QWidget *parent = nullptr) = 0;
+    virtual SettingWidget *widget(const NetworkManager::VpnSetting::Ptr &setting, QWidget *parent) = 0;
+    virtual SettingWidget *askUser(const NetworkManager::VpnSetting::Ptr &setting, const QStringList &hints, QWidget *parent) = 0;
 
     /**
      * Suggested file name to save the exported connection configuration.
@@ -44,35 +46,52 @@ public:
      * File extension to be used in QFileDialog when selecting the file to import.
      * The format is: *.<extension> [*.<extension> ...]. For instance: '*.pcf'
      */
-    virtual QString supportedFileExtensions() const = 0;
+    virtual QStringList supportedFileExtensions() const;
 
-    /**
-     * If the plugin does not support fileName's extension it must just return an empty QVariantList.
-     * If it supports the extension and import has failed it must set mError with VpnUiPlugin::Error
-     * and mErrorMessage with a custom error message before returning an empty QVariantList.
-     */
-    virtual NMVariantMapMap importConnectionSettings(const QString &fileName) = 0;
-    virtual bool exportConnectionSettings(const NetworkManager::ConnectionSettings::Ptr &connection, const QString &fileName) = 0;
+    struct ImportResult {
+    private:
+        NMConnection *m_connection;
+        ErrorType m_error = NoError;
+        QString m_errorMessage;
 
-    virtual QMessageBox::StandardButtons suggestedAuthDialogButtons() const;
-    ErrorType lastError() const;
-    QString lastErrorMessage();
+    public:
+        operator bool() const;
 
-    struct LoadResult {
-        VpnUiPlugin *plugin = nullptr;
-        QString error;
+        QString errorMessage() const;
 
-        operator bool() const
-        {
-            return plugin != nullptr;
-        }
+        NMConnection *connection() const;
+
+        static ImportResult fail(const QString &errorMessage);
+
+        static ImportResult pass(NMConnection *connection);
+
+        static ImportResult notImplemented();
     };
 
-    static KPluginFactory::Result<VpnUiPlugin> loadPluginForType(QObject *parent, const QString &serviceType);
+    virtual ImportResult importConnectionSettings(const QString &fileName);
 
-protected:
-    ErrorType mError;
-    QString mErrorMessage;
+    struct ExportResult {
+    private:
+        ErrorType m_error = NoError;
+        QString m_errorMessage;
+
+    public:
+        operator bool() const;
+
+        QString errorMessage() const;
+
+        static ExportResult pass();
+
+        static ExportResult fail(const QString &errorMessage);
+
+        static ExportResult notImplemented();
+    };
+
+    virtual ExportResult exportConnectionSettings(const NetworkManager::ConnectionSettings::Ptr &connection, const QString &fileName);
+
+    virtual QMessageBox::StandardButtons suggestedAuthDialogButtons() const;
+
+    static KPluginFactory::Result<VpnUiPlugin> loadPluginForType(QObject *parent, const QString &serviceType);
 };
 
 #endif // PLASMA_NM_VPN_UI_PLUGIN_H

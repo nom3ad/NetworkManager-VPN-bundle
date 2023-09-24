@@ -55,7 +55,7 @@ run-auth-dialog:
 dev-install-watch:
 	while inotifywait --recursive --event close_write,moved_to,create common/ plugin-service/ providers/ property-editor/ plasma-nm-applet-ui/ auth-dialog/ CMakeLists.txt *.in; \
 	do \
-		make configure && make all && sudo make install; \
+		make configure && make all && sudo make install ||  echo -e "\e[31mBuild failed!\e[0m"; \
 	done
 
 install: 

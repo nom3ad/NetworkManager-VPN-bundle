@@ -7,10 +7,10 @@
 #ifndef PLASMA_NM_PASSWORD_FIELD_H
 #define PLASMA_NM_PASSWORD_FIELD_H
 
-#include <QtWidgets/QComboBox>
-#include <QtWidgets/QLineEdit>
+#include <QComboBox>
+#include <QLineEdit>
 
-#include <QtWidgets/QVBoxLayout>
+#include <QVBoxLayout>
 
 class Q_DECL_EXPORT PasswordField : public QWidget
 {
@@ -45,13 +45,13 @@ private Q_SLOTS:
 
 Q_SIGNALS:
     void textChanged(const QString &text);
-    void passwordOptionChanged(PasswordOption option);
+    void passwordOptionChanged(PasswordField::PasswordOption option);
 
 private:
     PasswordOption m_currentPasswordOption;
-    QVBoxLayout *m_layout = nullptr;
-    QLineEdit *m_passwordField = nullptr;
-    QComboBox *m_passwordOptionsMenu = nullptr;
+    QVBoxLayout *const m_layout;
+    QLineEdit *const m_passwordField;
+    QComboBox *const m_passwordOptionsMenu;
     QAction *m_toggleEchoModeAction = nullptr;
 };
 

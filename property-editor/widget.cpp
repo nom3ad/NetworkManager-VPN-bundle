@@ -30,7 +30,7 @@ typedef struct {
 static void this_vpn_editor_widget_interface_init(NMVpnEditorInterface *iface_class);
 
 #define _G_ADD_PRIVATE(TypeName) G_ADD_PRIVATE(TypeName) // hack to ensure that ThisVPNEditorWidget is expanded
-G_DEFINE_TYPE_WITH_CODE(ThisVPNEditorWidget, 
+G_DEFINE_TYPE_WITH_CODE(ThisVPNEditorWidget,
                         this_vpn_editor_widget,
                         G_TYPE_OBJECT,
                         _G_ADD_PRIVATE(ThisVPNEditorWidget) G_IMPLEMENT_INTERFACE(NM_TYPE_VPN_EDITOR, this_vpn_editor_widget_interface_init))
@@ -60,7 +60,7 @@ static bool check_validity(ThisVPNEditorWidget *self, GError **error)
                 return false;
             }
             int min_length = json_object_get_int_member_with_default(input_def_obj, "min_length", 0);
-            if (min_length && value.length() < min_length) {
+            if (min_length && value.length() < min_length && !value.empty()) {
                 set_invalid_property_error(error, "Property %s must be at least %d characters long", id.c_str(), min_length);
                 return false;
             }
@@ -117,38 +117,30 @@ static bool apply_connection_proprties(ThisVPNEditorWidget *self, NMConnection *
             ThisVPNEditorWidget *self = (ThisVPNEditorWidget *)user_data;
             ThisVPNEditorWidgetPrivate *priv = (ThisVPNEditorWidgetPrivate *)this_vpn_editor_widget_get_instance_private(THIS_VPN_EDITOR_WIDGET(self));
             if (priv->input_widgets.find(key) == priv->input_widgets.end()) {
-                g_warning("apply_connection_proprties() No input widget for key %s\n", key.c_str());
+                g_warning("apply_connection_proprties() No input widget for key %s", key.c_str());
                 return;
             }
             InputItem inp = priv->input_widgets.at(key);
             GtkWidget *widget = inp.widget;
-            string value_change_signal_name = "changed";
             if (G_TYPE_CHECK_INSTANCE_TYPE((widget), GTK_TYPE_SPIN_BUTTON)) {
                 int v = stoi(value);
-                g_debug("apply_connection_proprties() Set spin button: key=%s value=%d\n", key.c_str(), v);
+                g_debug("apply_connection_proprties() Set spin button: key=%s value=%d", key.c_str(), v);
                 gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget), v);
             } else if (G_TYPE_CHECK_INSTANCE_TYPE((widget), GTK_TYPE_ENTRY)) {
-                g_debug("apply_connection_proprties() Set text entry: key=%s value=%s\n", key.c_str(), value.c_str());
+                g_debug("apply_connection_proprties() Set text entry: key=%s value=%s", key.c_str(), value.c_str());
                 gtk_editable_set_text(GTK_EDITABLE(widget), value.c_str());
             } else if (G_TYPE_CHECK_INSTANCE_TYPE((widget), GTK_TYPE_CHECK_BUTTON)) {
                 bool v = value == "true";
-                value_change_signal_name = "toggled";
-                g_debug("apply_connection_proprties() Set check button: key=%s value=%d\n", key.c_str(), v);
+                g_debug("apply_connection_proprties() Set check button: key=%s value=%d", key.c_str(), v);
                 gtk_check_button_set_active(GTK_CHECK_BUTTON(widget), v);
             } else {
-                g_warning("Unknown widget type for key %s\n", key.c_str());
+                g_warning("Unknown widget type for key %s", key.c_str());
                 return;
             }
-            g_signal_connect(G_OBJECT(widget),
-                             value_change_signal_name.c_str(),
-                             G_CALLBACK(+[](G_GNUC_UNUSED GtkWidget *widget, gpointer user_data) -> void {
-                                 g_signal_emit_by_name(THIS_VPN_EDITOR_WIDGET(user_data), "changed");
-                             }),
-                             self);
         },
         self);
     // g_return_val_if_fail(widget != nullptr, false);
-    g_debug("apply_connection_proprties() Done\n");
+    g_debug("apply_connection_proprties() Done");
     return true;
 }
 
@@ -195,7 +187,7 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
             return nullptr;
         }
         string section_title = STR(json_object_get_string_member_with_default(section_obj, "section", "<unnamed>"));
-        g_debug("Processing section_obj: section_title=%s\n", section_title.c_str());
+        g_debug("Processing section_obj: section_title=%s", section_title.c_str());
 
         JsonArray *input_def_array = json_object_get_array_member(section_obj, "inputs");
         if (!input_def_array) {
@@ -218,6 +210,7 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
         gtk_widget_set_margin_start(box_section, 15);
 
         g_debug("Adding input widgets to section: %s", section_title.c_str());
+        string value_change_signal_name = "changed";
         for (guint j = 0; j < json_array_get_length(input_def_array); j++) {
             JsonNode *input_def_node = json_array_get_element(input_def_array, j);
             JsonObject *input_def_obj = json_node_get_object(input_def_node);
@@ -239,7 +232,7 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
                 gint64 max_v = json_object_get_int_member_with_default(input_def_obj, "max_value", 999999);
                 widget_input = gtk_spin_button_new_with_range(min_v, max_v, 1);
                 gint64 default_v = json_object_get_int_member_with_default(input_def_obj, "default", 0);
-                g_debug("Found type=%s: id=%s default=%d, min_v=%d max_v=%d\n", type.c_str(), id.c_str(), default_v, min_v, max_v);
+                g_debug("Found type=%s: id=%s default=%d, min_v=%d max_v=%d", type.c_str(), id.c_str(), default_v, min_v, max_v);
                 if (default_v) {
                     gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget_input), default_v);
                 }
@@ -247,7 +240,7 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
                 widget_input = gtk_entry_new();
                 string default_v = STR(json_object_get_string_member_with_default(input_def_obj, "default", ""));
                 gint64 max_length = json_object_get_int_member_with_default(input_def_obj, "max_length", 128);
-                g_debug("Found type=%s: id=%s  max_length=%d\n", type.c_str(), id.c_str(), max_length);
+                g_debug("Found type=%s: id=%s  max_length=%d", type.c_str(), id.c_str(), max_length);
                 if (!default_v.empty()) {
                     gtk_editable_set_text(GTK_EDITABLE(widget_input), default_v.c_str());
                 }
@@ -261,8 +254,9 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
             } else if (type == "boolean") {
                 widget_input = gtk_check_button_new();
                 bool default_v = json_object_get_boolean_member_with_default(input_def_obj, "default", false);
-                g_debug("Found type=%s: id=%s default=%d\n", type.c_str(), id.c_str(), default_v);
+                g_debug("Found type=%s: id=%s default=%d", type.c_str(), id.c_str(), default_v);
                 gtk_check_button_set_active(GTK_CHECK_BUTTON(widget_input), default_v);
+                value_change_signal_name = "toggled";
             } else if (type == "enum") {
                 JsonArray *enum_array = json_object_get_array_member(input_def_obj, "enum");
                 if (!enum_array) {
@@ -306,11 +300,19 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
             }
 
             else {
-                g_warning("Found unknown type %s\n", type.c_str());
+                g_warning("Found unknown type %s", type.c_str());
                 continue;
             }
             set_prefixed_widget_name(widget_input, id + "InputWidget");
             gtk_widget_set_tooltip_text(widget_input, description.c_str());
+            // XXX: sourcery (https://stackoverflow.com/questions/49638121/gtk-g-signal-connect-and-c-lambda-results-in-invalid-cast-errors)
+            g_signal_connect(G_OBJECT(widget_input),
+                             value_change_signal_name.c_str(),
+                             G_CALLBACK(+[](G_GNUC_UNUSED GtkWidget *widget, gpointer user_data) -> void {
+                                 g_debug("stuff_changed_cb() widget: %p", gtk_widget_get_name(widget));
+                                 g_signal_emit_by_name(THIS_VPN_EDITOR_WIDGET(user_data), "changed");
+                             }),
+                             editor_obj);
 
             GtkWidget *lbl_input = gtk_label_new(label.c_str());
             set_prefixed_widget_name(lbl_input, id + "InputLabel");
@@ -355,7 +357,7 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
         return nullptr;
     }
 
-    g_debug("this_vpn_editor_widget_factory() Done: %p\n", editor_obj);
+    g_debug("this_vpn_editor_widget_factory() Done: %p", editor_obj);
     return editor_obj;
 }
 
@@ -376,7 +378,7 @@ static gboolean update_connection_properties(NMVpnEditor *iface, NMConnection *c
     for (const auto &pair : priv->input_widgets) {
         string id = pair.first;
         GtkWidget *widget = pair.second.widget;
-        g_debug("update_connection_properties() Processing widget: id=%s w=%p\n", id.c_str(), widget);
+        g_debug("update_connection_properties() Processing widget: id=%s w=%p", id.c_str(), widget);
         string value;
         if (G_TYPE_CHECK_INSTANCE_TYPE((widget), GTK_TYPE_SPIN_BUTTON)) {
             value = to_string((int)gtk_spin_button_get_value(GTK_SPIN_BUTTON(widget)));
@@ -386,19 +388,19 @@ static gboolean update_connection_properties(NMVpnEditor *iface, NMConnection *c
             value = gtk_check_button_get_active(GTK_CHECK_BUTTON(widget)) ? "true" : "false";
         }
 #if GTK_CHECK_VERSION(4, 0, 0)
-    else if (G_TYPE_CHECK_INSTANCE_TYPE((widget), GTK_TYPE_DROP_DOWN)) {
-        value = STR(gtk_drop_down_get_selected_item(GTK_DROP_DOWN(widget)));
-    }
+        else if (G_TYPE_CHECK_INSTANCE_TYPE((widget), GTK_TYPE_DROP_DOWN)) {
+            value = STR(gtk_drop_down_get_selected_item(GTK_DROP_DOWN(widget)));
+        }
 #else
         else if (G_TYPE_CHECK_INSTANCE_TYPE((widget), GTK_TYPE_COMBO_BOX_TEXT)) {
             value = STR(gtk_combo_box_get_active_id(GTK_COMBO_BOX(widget)));
         }
 #endif
         else {
-            g_warning("Unknown widget type for key %s\n", id.c_str());
+            g_warning("Unknown widget type for key %s", id.c_str());
         }
         if (!value.empty()) {
-            g_debug("Set key=%s value=%s\n", id.c_str(), value.c_str());
+            g_debug("Set key=%s value=%s", id.c_str(), value.c_str());
             nm_setting_vpn_add_data_item(s_vpn, id.c_str(), value.c_str());
         }
     }

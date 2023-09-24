@@ -8,12 +8,12 @@
 
 #include "common/plasma/settingwidget.h"
 
-class SettingView : public SettingWidget
+class VPNProviderSettingView : public SettingWidget
 {
     Q_OBJECT
 public:
-    explicit SettingView(const NetworkManager::VpnSetting::Ptr &setting, QWidget *parent = nullptr, Qt::WindowFlags f = {});
-    ~SettingView() override;
+    explicit VPNProviderSettingView(const NetworkManager::VpnSetting::Ptr &setting, QWidget *parent = nullptr, Qt::WindowFlags f = {});
+    ~VPNProviderSettingView() override;
 
     void loadConfig(const NetworkManager::Setting::Ptr &setting) override;
     void loadSecrets(const NetworkManager::Setting::Ptr &setting) override;
