@@ -33,6 +33,18 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/common)
 
+function(set_vpn_provider_defines  TARGET_NAME)
+  target_compile_definitions(${TARGET_NAME} PRIVATE
+  NM_VPN_PROVIDER_ID="${NM_VPN_PROVIDER_ID}"
+  NM_VPN_PROVIDER_LABEL="${NM_VPN_PROVIDER_LABEL}"
+  NM_VPN_PROVIDER_DESCRIPTION="${NM_VPN_PROVIDER_DESCRIPTION}"
+  NM_VPN_PROVIDER_DBUS_SERVICE="${NM_VPN_PROVIDER_DBUS_SERVICE}"
+  NM_VPN_PROVIDER_INPUT_FORM_JSON="${NM_VPN_PROVIDER_INPUT_FORM_JSON}"
+  )
+endfunction()
+
+
+
 add_compile_definitions(
   GETTEXT_PACKAGE="NetworkManager-VPN-bundle"
   TRANSLATION_DOMAIN="NetworkManager-VPN-bundle"
@@ -58,17 +70,12 @@ foreach(_P_JSON_FILE ${_PROVIDER_DEFINITION_FILE})
 
   message(">>> Found VPN provider: ${NM_VPN_PROVIDER_ID}")
 
-  add_compile_definitions(NM_VPN_PROVIDER_ID="${NM_VPN_PROVIDER_ID}")
-  add_compile_definitions(NM_VPN_PROVIDER_LABEL="${NM_VPN_PROVIDER_LABEL}")
-  add_compile_definitions(NM_VPN_PROVIDER_DESCRIPTION="${NM_VPN_PROVIDER_DESCRIPTION}")
-  add_compile_definitions(NM_VPN_PROVIDER_DBUS_SERVICE="${NM_VPN_PROVIDER_DBUS_SERVICE}")
-  add_compile_definitions(NM_VPN_PROVIDER_INPUT_FORM_JSON="${NM_VPN_PROVIDER_INPUT_FORM_JSON}")
 
-  add_subdirectory("property-editor")
+  add_subdirectory("property-editor" "${NM_VPN_PROVIDER_ID}/property-editor")
   find_package(ECM QUIET)
   if(${ECM_FOUND})
       message(">>> ECM found. May be KDE?")
-      add_subdirectory("plasma-nm-applet-ui")
+      add_subdirectory("plasma-nm-applet-ui" "${NM_VPN_PROVIDER_ID}/plasma-nm-applet-ui")
   else()
       message(">>> ECM not found. May be GNOME?")
   endif()

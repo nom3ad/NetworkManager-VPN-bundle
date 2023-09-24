@@ -1,4 +1,3 @@
-
 set(QT_MIN_VERSION "5.15.0")
 set(KF5_MIN_VERSION "5.86")
 set(KDE_COMPILERSETTINGS_LEVEL "5.82")
@@ -42,12 +41,14 @@ find_package(KF5 ${KF5_MIN_VERSION} REQUIRED
     Wallet
     WidgetsAddons
     WindowSystem
-)
+    )
+    
+configure_file("../plasma_nm_plugin_metadata.json.in" "metadata.json" @ONLY)
 
 set(LIB_NAME "plasmanetworkmanagement_${NM_VPN_PROVIDER_ID}ui")
 
-
 add_library(${LIB_NAME} MODULE)
+set_vpn_provider_defines(${LIB_NAME})
 target_sources(${LIB_NAME} PRIVATE
     plugin.cpp
     settingview.cpp
@@ -55,7 +56,6 @@ target_sources(${LIB_NAME} PRIVATE
 )
 
 # ki18n_wrap_ui(${LIB_NAME} authprompt.ui)
-configure_file("../plasma_nm_plugin_metadata.json.in" "metadata.json" @ONLY)
 
 target_link_libraries(${LIB_NAME}
     KF5::NetworkManagerQt

@@ -23,6 +23,7 @@ endif()
 
 set(PLUGIN_LIB_NAME "libnm-vpn-plugin-${NM_VPN_PROVIDER_ID}")
 add_library(${PLUGIN_LIB_NAME} MODULE)
+set_vpn_provider_defines(${PLUGIN_LIB_NAME})
 set_target_properties(${PLUGIN_LIB_NAME} PROPERTIES PREFIX "")
 target_sources(${PLUGIN_LIB_NAME} PRIVATE
     plugin.h
@@ -45,6 +46,7 @@ foreach(_GTK_VERSION ${TARGET_GTK_VERSIONS})
     set(_WIDGET_LIB_NAME "libnm-gtk${_GTK_VERSION}-vpn-plugin-${NM_VPN_PROVIDER_ID}-editor")
     message(">>> add_library() ${_WIDGET_LIB_NAME}")
     add_library(${_WIDGET_LIB_NAME} MODULE)
+    set_vpn_provider_defines(${_WIDGET_LIB_NAME})
     set_target_properties(${_WIDGET_LIB_NAME} PROPERTIES PREFIX "")
     target_sources(${_WIDGET_LIB_NAME} PRIVATE
         widget.h

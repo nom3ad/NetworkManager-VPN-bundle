@@ -8,16 +8,6 @@
 
 #include "common/plasma/settingwidget.h"
 
-#ifndef PLASMA_NM_VPN_PLUGIN_SETTING_VIEW_H
-#define PLASMA_NM_VPN_PLUGIN_SETTING_VIEW_H
-#endif
-#ifndef NM_VPN_PROVIDER_INPUT_FORM_JSON
-#define NM_VPN_PROVIDER_INPUT_FORM_JSON
-#endif
-#ifndef NM_VPN_PROVIDER_DBUS_SERVICE
-#define NM_VPN_PROVIDER_DBUS_SERVICE
-#endif
-
 class SettingView : public SettingWidget
 {
     Q_OBJECT
