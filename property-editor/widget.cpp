@@ -28,10 +28,12 @@ typedef struct {
 } ThisVPNEditorWidgetPrivate;
 
 static void this_vpn_editor_widget_interface_init(NMVpnEditorInterface *iface_class);
-G_DEFINE_TYPE_WITH_CODE(ThisVPNEditorWidget,
+
+#define _G_ADD_PRIVATE(TypeName) G_ADD_PRIVATE(TypeName) // hack to ensure that ThisVPNEditorWidget is expanded
+G_DEFINE_TYPE_WITH_CODE(ThisVPNEditorWidget, 
                         this_vpn_editor_widget,
                         G_TYPE_OBJECT,
-                        G_ADD_PRIVATE(ThisVPNEditorWidget) G_IMPLEMENT_INTERFACE(NM_TYPE_VPN_EDITOR, this_vpn_editor_widget_interface_init))
+                        _G_ADD_PRIVATE(ThisVPNEditorWidget) G_IMPLEMENT_INTERFACE(NM_TYPE_VPN_EDITOR, this_vpn_editor_widget_interface_init))
 
 static inline void set_prefixed_widget_name(GtkWidget *widget, string s1)
 {

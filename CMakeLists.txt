@@ -33,13 +33,22 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/common)
 
+
 function(set_vpn_provider_defines  TARGET_NAME)
   target_compile_definitions(${TARGET_NAME} PRIVATE
+  
   NM_VPN_PROVIDER_ID="${NM_VPN_PROVIDER_ID}"
   NM_VPN_PROVIDER_LABEL="${NM_VPN_PROVIDER_LABEL}"
   NM_VPN_PROVIDER_DESCRIPTION="${NM_VPN_PROVIDER_DESCRIPTION}"
   NM_VPN_PROVIDER_DBUS_SERVICE="${NM_VPN_PROVIDER_DBUS_SERVICE}"
   NM_VPN_PROVIDER_INPUT_FORM_JSON="${NM_VPN_PROVIDER_INPUT_FORM_JSON}"
+
+  ThisVPNEditorPlugin=NM${NM_VPN_PROVIDER_ID}VPNEditorPlugin
+  ThisVPNEditorPluginClass=NM${NM_VPN_PROVIDER_ID}VPNEditorPluginClass
+  ThisVPNEditorPluginPrivate=NM${NM_VPN_PROVIDER_ID}VPNEditorPluginPrivate
+  ThisVPNEditorWidget=NM${NM_VPN_PROVIDER_ID}VPNEditorWidget
+  ThisVPNEditorWidgetClass=NM${NM_VPN_PROVIDER_ID}VPNEditorWidgetClass
+  ThisVPNEditorWidgetPrivate=NM${NM_VPN_PROVIDER_ID}VPNEditorWidgetPrivate
   )
 endfunction()
 

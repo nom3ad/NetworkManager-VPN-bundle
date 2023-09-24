@@ -43,7 +43,6 @@ find_package(KF5 ${KF5_MIN_VERSION} REQUIRED
     WindowSystem
     )
     
-configure_file("../plasma_nm_plugin_metadata.json.in" "metadata.json" @ONLY)
 
 set(LIB_NAME "plasmanetworkmanagement_${NM_VPN_PROVIDER_ID}ui")
 
@@ -56,6 +55,7 @@ target_sources(${LIB_NAME} PRIVATE
 )
 
 # ki18n_wrap_ui(${LIB_NAME} authprompt.ui)
+configure_file("../plasma_nm_plugin_metadata.json.in" "metadata.json" @ONLY)
 
 target_link_libraries(${LIB_NAME}
     KF5::NetworkManagerQt
