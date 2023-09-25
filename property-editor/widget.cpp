@@ -215,7 +215,13 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
             JsonNode *input_def_node = json_array_get_element(input_def_array, j);
             JsonObject *input_def_obj = json_node_get_object(input_def_node);
             if (!input_def_obj) {
-                g_set_error(error, EDITOR_PLUGIN_ERROR, 0, "NM_VPN_PROVIDER_INPUT_FORM_JSON: Invalid input def at index [%s].%d.%d",section_title.c_str(), i, j);
+                g_set_error(error,
+                            EDITOR_PLUGIN_ERROR,
+                            0,
+                            "NM_VPN_PROVIDER_INPUT_FORM_JSON: Invalid input def at index [%s].%d.%d",
+                            section_title.c_str(),
+                            i,
+                            j);
                 return nullptr;
             }
             string id = STR(json_object_get_string_member_with_default(input_def_obj, "id", ""));
@@ -223,7 +229,13 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
             string label = STR(json_object_get_string_member_with_default(input_def_obj, "label", id.c_str()));
             string description = STR(json_object_get_string_member_with_default(input_def_obj, "description", ""));
             if (id.empty()) {
-                g_set_error(error, EDITOR_PLUGIN_ERROR, 0, "NM_VPN_PROVIDER_INPUT_FORM_JSON: Missing input def id at index [%s].%d.%d",section_title.c_str(), i, j);
+                g_set_error(error,
+                            EDITOR_PLUGIN_ERROR,
+                            0,
+                            "NM_VPN_PROVIDER_INPUT_FORM_JSON: Missing input def id at index [%s].%d.%d",
+                            section_title.c_str(),
+                            i,
+                            j);
                 continue;
             }
             GtkWidget *widget_input;
@@ -260,7 +272,13 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
             } else if (type == "enum") {
                 JsonArray *enum_array = json_object_get_array_member(input_def_obj, "values");
                 if (!enum_array) {
-                    g_set_error(error, EDITOR_PLUGIN_ERROR, 0, "NM_VPN_PROVIDER_INPUT_FORM_JSON: Invalid enum input def at index [%s].%d.%d",section_title.c_str(), i, j);
+                    g_set_error(error,
+                                EDITOR_PLUGIN_ERROR,
+                                0,
+                                "NM_VPN_PROVIDER_INPUT_FORM_JSON: Invalid enum input def at index [%s].%d.%d",
+                                section_title.c_str(),
+                                i,
+                                j);
                     return nullptr;
                 }
                 vector<string> enum_values;
@@ -271,6 +289,15 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
                 string default_v = STR(json_object_get_string_member_with_default(input_def_obj, "default", ""));
                 // g_debug("Found type=%s: id=%s default=%s enume_values: %s", type.c_str(), id.c_str(), default_v.c_str(),
                 // JOIN_STRING_VEC(enum_values).c_str());
+                int default_val_idx = -1;
+                if (!default_v.empty()) {
+                    default_val_idx = enum_values.size() - 1;
+                    for (; default_val_idx; default_val_idx--) {
+                        if (enum_values[default_val_idx] == default_v) {
+                            break;
+                        }
+                    }
+                }
 
 #if GTK_CHECK_VERSION(4, 0, 0)
                 GtkStringList *string_list = gtk_string_list_new(NULL);
@@ -278,14 +305,8 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
                     gtk_string_list_append(string_list, v.c_str());
                 }
                 widget_input = gtk_drop_down_new(G_LIST_MODEL(string_list), NULL);
-                if (!default_v.empty()) {
-                    int v_pos = enum_values.size() - 1;
-                    for (; v_pos; v_pos--) {
-                        if (enum_values[v_pos] == default_v) {
-                            break;
-                        }
-                    }
-                    gtk_drop_down_set_selected(GTK_DROP_DOWN(widget_input), v_pos);
+                if (default_val_idx >= 0) {
+                    gtk_drop_down_set_selected(GTK_DROP_DOWN(widget_input), default_val_idx);
                 }
 
 #else
@@ -293,8 +314,8 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
                 for (const auto &v : enum_values) {
                     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(widget_input), v.c_str());
                 }
-                if (!default_v.empty()) {
-                    gtk_combo_box_set_active_id(GTK_COMBO_BOX(widget_input), default_v.c_str());
+                if (default_val_idx >= 0) {
+                    gtk_combo_box_set_active(GTK_COMBO_BOX(widget_input), default_val_idx);
                 }
 #endif
             }
@@ -389,11 +410,15 @@ static gboolean update_connection_properties(NMVpnEditor *iface, NMConnection *c
         }
 #if GTK_CHECK_VERSION(4, 0, 0)
         else if (G_TYPE_CHECK_INSTANCE_TYPE((widget), GTK_TYPE_DROP_DOWN)) {
-            value = STR(gtk_drop_down_get_selected_item(GTK_DROP_DOWN(widget)));
+            auto selected = gtk_drop_down_get_selected_item(GTK_DROP_DOWN(widget));
+            if (!selected) {
+                continue;
+            }
+            value = STR(gtk_string_object_get_string(GTK_STRING_OBJECT(selected)));
         }
 #else
         else if (G_TYPE_CHECK_INSTANCE_TYPE((widget), GTK_TYPE_COMBO_BOX_TEXT)) {
-            value = STR(gtk_combo_box_get_active_id(GTK_COMBO_BOX(widget)));
+            value = STR(gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(widget)));
         }
 #endif
         else {
