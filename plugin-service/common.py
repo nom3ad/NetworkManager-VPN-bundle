@@ -1,9 +1,8 @@
 import enum
-
+import ipaddress
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Optional, TypedDict
-import ipaddress
 
 
 class NMVpnConnectionState(enum.IntEnum):

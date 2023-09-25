@@ -1,17 +1,19 @@
-import time
-import subprocess
+import atexit
 import contextlib
-import threading
-import socket
-import struct
 import ipaddress
+import json
 import logging
 import re
-import json
+import socket
+import struct
+import subprocess
+import threading
+import time
 from typing import Any
-from weakref import WeakSet
-import atexit
 from urllib import request
+from weakref import WeakSet
+
+import netifaces
 
 
 def ipv4_to_u32(addr: str | ipaddress.IPv4Address):
@@ -211,8 +213,9 @@ def set_proc_name(name: str):
     libc.prctl(PR_SET_NAME, name_, NULL, NULL, NULL)
 
 
-def as_valid_if_name(s: str):
-    return re.sub(r"[^a-zA-Z0-9]", "", s)[:15]
+def find_valid_if_name(s: str):
+    ifname = re.sub(r"[^a-zA-Z0-9]", "", s)[:15]
+    existing_ifaces = set()
 
 
 def iter_until(fn, sentinal_value, sentinal_error):
@@ -266,12 +269,10 @@ def ip_interface_addresses_by_family(addrs):
     return ipv4, ipv6
 
 
-def get_network_interfaces_by_ip(
-    ip: ipaddress.IPv4Address | ipaddress.IPv6Address | ipaddress.IPv4Interface | ipaddress.IPv6Interface | str,
-):
-    import netifaces
-    import socket
+AnyIPAddr = ipaddress.IPv4Address | ipaddress.IPv6Address | ipaddress.IPv4Interface | ipaddress.IPv6Interface
 
+
+def get_network_interfaces_by_ip(ip: AnyIPAddr | str):
     try:
         addr = ipaddress.ip_address(ip)
         mask = None

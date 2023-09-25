@@ -1,9 +1,15 @@
-import logging
 import ipaddress
 import json
-from .utils import timeout, Subprocess, http_rquest, ip_interface_addresses_by_family, get_network_interfaces_by_ip
-from .common import VPNConnectionControlBase, ConnectionResult
-from pathlib import Path
+import logging
+
+from .common import ConnectionResult, VPNConnectionControlBase
+from .utils import (
+    Subprocess,
+    get_network_interfaces_by_ip,
+    http_rquest,
+    ip_interface_addresses_by_family,
+    timeout,
+)
 
 
 class ZeroTierControl(VPNConnectionControlBase):

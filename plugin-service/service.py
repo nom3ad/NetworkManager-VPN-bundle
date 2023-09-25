@@ -1,28 +1,29 @@
-from contextlib import suppress
+import argparse
+import enum
 import importlib
-import sys
-import os
-import threading
-from typing import Any
 import json
+import logging
+import os
+import signal
+import sys
+import threading
+from contextlib import suppress
 
 # import dbus
 from pathlib import Path
-import logging
+from typing import Any
+
+from dbus.mainloop.glib import DBusGMainLoop
 from pydbus import Variant
 from pydbus.generic import signal as Signal
-import enum
-import signal
-import argparse
-from dbus.mainloop.glib import DBusGMainLoop
 
 dir = Path(__file__).parent
 
-from .utils import ipv4_to_u32, ipv6_to_u8_slice, set_proc_name
-from .common import VPNConnectionControlBase, ServiceBase, VPNConnectionConfiguration
-
 from gi.repository import GLib
 from pydbus import SessionBus, SystemBus
+
+from .common import ServiceBase, VPNConnectionConfiguration, VPNConnectionControlBase
+from .utils import ipv4_to_u32, ipv6_to_u8_slice, set_proc_name
 
 loop = GLib.MainLoop()
 

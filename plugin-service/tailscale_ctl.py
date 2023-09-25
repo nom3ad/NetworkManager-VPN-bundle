@@ -1,16 +1,20 @@
-import logging
-import sys
-import time
-import os
-import stat
-import select
-import re
-from ipaddress import ip_address
 import json
+import logging
+import os
 import shlex
+import stat
 import subprocess
-from .utils import timeout, as_valid_if_name, Subprocess, iter_until, ip_interface_addresses_by_family
-from .common import VPNConnectionControlBase, ServiceBase, ConnectionResult, VPNConnectionConfiguration
+import sys
+from ipaddress import ip_address
+
+from .common import ConnectionResult, VPNConnectionControlBase
+from .utils import (
+    Subprocess,
+    find_valid_if_name,
+    ip_interface_addresses_by_family,
+    iter_until,
+    timeout,
+)
 
 _DEFAULT_SOCKPATH = f"/var/run/tailscale/tailscaled.sock"
 _DEFAULT_TAILSCALED_UP_TIMEOUT_SEC = 90
@@ -38,7 +42,7 @@ class TailscaleControl(VPNConnectionControlBase):
             except:
                 raise RuntimeError(f"Invalid port value: '{listening_port}'")
 
-        tundev = vpn_data.get("tun-device-name", "").strip() or as_valid_if_name(connection_name)
+        tundev = vpn_data.get("tun-device-name", "").strip() or find_valid_if_name(connection_name)
         self.tailscaled_cmd.extend(("-tun", tundev))
 
         if log_verbosity := vpn_data.get("log-verbosity", "").strip():
@@ -51,7 +55,7 @@ class TailscaleControl(VPNConnectionControlBase):
         stderr = sys.stderr
         if log_file := vpn_data.get("log-file", ""):
             stderr = open(log_file, "wb+")
-        self._proc_tailscaled = Subprocess(self.tailscaled_cmd, stderr=stderr)
+        self._proc_tailscaled = Subprocess(self.tailscaled_cmd, "tailscaled", stderr=stderr)
 
         logging.info("Wating for tailscaled to be up and running")
         with timeout(self._tailscale_socket_appear_timeout_sec) as t:
