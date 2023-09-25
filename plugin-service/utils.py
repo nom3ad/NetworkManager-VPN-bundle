@@ -24,10 +24,10 @@ def ipv6_to_u8_slice(addr: str | ipaddress.IPv6Address):
 
 
 class timeout:
-    def __init__(self, timeout_sec=0) -> None:
+    def __init__(self, timeout_sec=0, description=None) -> None:
         self.timeout_sec = timeout_sec
         self.starttime = None
-
+        self.description = description or f"After {timeout_sec}s"
         self._sleep_orginal = time.sleep
 
     @property
@@ -42,14 +42,18 @@ class timeout:
             raise RuntimeError("Timer not started yet")
         return time.time() - self.starttime
 
+    @property
+    def timedout(self):
+        return self.elapsed > self.timeout_sec
+
     def clear(self):
         if not self.starttime:
             raise RuntimeError("Timer not started yet")
         setattr(self, "sleep", self._sleep_orginal)
 
     def sleep(self, sec):
-        if self.elapsed > self.timeout_sec:
-            raise TimeoutError()
+        if self.timedout:
+            raise TimeoutError(description=self.description)
         self._sleep_orginal(sec)
 
     def __enter__(self):
@@ -57,7 +61,6 @@ class timeout:
             raise RuntimeError("Timer aleady started")
 
         self.starttime = time.time()
-        # time.sleep = _sleep
         return self
 
     def __exit__(self, exc_type, value, traceback):
@@ -225,8 +228,8 @@ def http_rquest(method, url, data, headers=None, timeout=10):
         headers["Content-Type"] = "application/json"
     elif isinstance(data, str):
         data = data.encode("utf-8")
-    req = request.Request(url, method=method, data=data, timeout=timeout)
-    with request.urlopen(req) as f:
+    req = request.Request(url, method=method, data=data)
+    with request.urlopen(req, timeout=timeout) as f:
         return f.read().decode("utf-8")
 
 

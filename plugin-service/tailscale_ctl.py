@@ -59,7 +59,7 @@ class TailscaleControl(VPNConnectionControlBase):
                 if self._tailscale_sock_is_available():
                     break
             logging.debug("Wating for tailscaled. will timeout after: %ds", t.remaining)
-            time.sleep(0.5)
+            t.sleep(0.5)
 
         self._call_cli_up(vpn_data)
         status = self._get_status()
