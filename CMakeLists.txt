@@ -135,6 +135,6 @@ set(CPACK_DEBIAN_PACKAGE_DEPENDS "libnm0 (>= 1.1.90), libc6 (>= 2.4), libglib2.0
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "nom3ad") #required
 set(CPACK_RPM_PACKAGE_LICENSE "MIT") 
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY ${CPACK_PACKAGE_DESCRIPTION}) 
-set(CPACK_RPM_PACKAGE_REQUIRES "libnm, python-pydbus, python-netifaces") 
+set(CPACK_RPM_PACKAGE_REQUIRES "NetworkManager-libnm, python-pydbus, python-netifaces") 
 
 INCLUDE(CPack)
