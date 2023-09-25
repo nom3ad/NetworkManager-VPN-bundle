@@ -116,8 +116,6 @@ VPNProviderSettingView::VPNProviderSettingView(const NetworkManager::VpnSetting:
                     pf->setObjectName("pf_" + id);
                     pf->setPasswordModeEnabled(true);
                     pf->setMaxLength(defObj["max_length"].toInt());
-                    if (minLength > 0)
-                        pf->setMaxLength(minLength);
                     if (maxLength > 0)
                         pf->setMaxLength(maxLength);
                     inputWidget = pf;

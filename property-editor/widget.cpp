@@ -215,7 +215,7 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
             JsonNode *input_def_node = json_array_get_element(input_def_array, j);
             JsonObject *input_def_obj = json_node_get_object(input_def_node);
             if (!input_def_obj) {
-                g_set_error(error, EDITOR_PLUGIN_ERROR, 0, "NM_VPN_PROVIDER_INPUT_FORM_JSON: Invalid input def at index %d.%d", i, j);
+                g_set_error(error, EDITOR_PLUGIN_ERROR, 0, "NM_VPN_PROVIDER_INPUT_FORM_JSON: Invalid input def at index [%s].%d.%d",section_title.c_str(), i, j);
                 return nullptr;
             }
             string id = STR(json_object_get_string_member_with_default(input_def_obj, "id", ""));
@@ -223,7 +223,7 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
             string label = STR(json_object_get_string_member_with_default(input_def_obj, "label", id.c_str()));
             string description = STR(json_object_get_string_member_with_default(input_def_obj, "description", ""));
             if (id.empty()) {
-                g_set_error(error, EDITOR_PLUGIN_ERROR, 0, "NM_VPN_PROVIDER_INPUT_FORM_JSON: Missing input def id at index %d.%d", i, j);
+                g_set_error(error, EDITOR_PLUGIN_ERROR, 0, "NM_VPN_PROVIDER_INPUT_FORM_JSON: Missing input def id at index [%s].%d.%d",section_title.c_str(), i, j);
                 continue;
             }
             GtkWidget *widget_input;
@@ -258,9 +258,9 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
                 gtk_check_button_set_active(GTK_CHECK_BUTTON(widget_input), default_v);
                 value_change_signal_name = "toggled";
             } else if (type == "enum") {
-                JsonArray *enum_array = json_object_get_array_member(input_def_obj, "enum");
+                JsonArray *enum_array = json_object_get_array_member(input_def_obj, "values");
                 if (!enum_array) {
-                    g_set_error(error, EDITOR_PLUGIN_ERROR, 0, "NM_VPN_PROVIDER_INPUT_FORM_JSON: Invalid enum input def at index %d.%d", i, j);
+                    g_set_error(error, EDITOR_PLUGIN_ERROR, 0, "NM_VPN_PROVIDER_INPUT_FORM_JSON: Invalid enum input def at index [%s].%d.%d",section_title.c_str(), i, j);
                     return nullptr;
                 }
                 vector<string> enum_values;
