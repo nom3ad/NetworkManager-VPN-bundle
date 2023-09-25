@@ -7,6 +7,7 @@ import struct
 import ipaddress
 import logging
 import re
+import json
 from weakref import WeakSet
 import atexit
 
@@ -110,7 +111,7 @@ class Subprocess(subprocess.Popen):
 
     @staticmethod
     @contextlib.contextmanager
-    def bg_process(cmd, name=None, process_timeout=None, graceful_exit_timeout=None, **popenkwargs):
+    def bg_process(*popenargs, name=None, process_timeout=None, graceful_exit_timeout=None, **kwargs):
         if graceful_exit_timeout is None:
             graceful_exit_timeout = Subprocess.DEFAULT_GRACEFUL_EXIT_TIMEOUT
         _proc_called = threading.Event()
@@ -120,7 +121,7 @@ class Subprocess(subprocess.Popen):
             nonlocal _proc_called
             nonlocal _proc
             try:
-                with Subprocess(cmd, name=name, **popenkwargs) as p:
+                with Subprocess(popenargs, name=name, **kwargs) as p:
                     _proc = p
                     _proc_called.set()
                     try:
@@ -146,7 +147,41 @@ class Subprocess(subprocess.Popen):
                 _proc.graceful_kill(graceful_exit_timeout)
             t.join(1)
 
+    @staticmethod
+    def check_output(*popenargs, name=None, process_timeout=None, graceful_exit_timeout=None, **kwargs):
+        if 'input' in kwargs and kwargs['input'] is None:
+            # Explicitly passing input=None was previously equivalent to passing an
+            # empty string. That is maintained here for backwards compatibility.
+            if kwargs.get('universal_newlines') or kwargs.get('text') or kwargs.get('encoding') \
+                    or kwargs.get('errors'):
+                empty = ''
+            else:
+                empty = b''
+            kwargs['input'] = empty
+        with Subprocess(popenargs, name=name, **kwargs, stdin=subprocess.PIPE) as p:
+            try:
+                stdout, stderr = p.communicate(input, timeout=timeout)
+            except:  # Including KeyboardInterrupt, communicate handled that.
+                p.graceful_kill(graceful_exit_timeout)
+                # We don't call process.wait() as .__exit__ does that for us.
+                raise
+            retcode = p.poll()
+            if retcode:
+                raise subprocess.CalledProcessError(retcode, p.args,
+                                        output=stdout, stderr=stderr)
+        return stdout
+    
+    @staticmethod
+    def check_output_json(*popenargs, name=None, process_timeout=None, graceful_exit_timeout=None, **kwargs):
+        stdout = Subprocess.check_output(*popenargs, name=name, process_timeout=process_timeout, graceful_exit_timeout=graceful_exit_timeout, **kwargs)
+        return json.loads(stdout)
 
+    @staticmethod
+    def check_output_text(*popenargs, name=None, process_timeout=None, graceful_exit_timeout=None, **kwargs):
+        stdout = Subprocess.check_output(*popenargs, name=name, process_timeout=process_timeout, graceful_exit_timeout=graceful_exit_timeout, **kwargs)
+        return stdout.decode("utf-8", errors="replace")
+        
+        
     @atexit.register
     @staticmethod
     def _cleanup():
@@ -154,6 +189,7 @@ class Subprocess(subprocess.Popen):
             if p.is_running:
                 logging.warn("atexit(): Process %r still running. try gracefull kill", p)
                 p.graceful_kill(Subprocess.DEFAULT_GRACEFUL_EXIT_TIMEOUT)
+                
 
 
 

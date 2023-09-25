@@ -19,7 +19,7 @@ from dbus.mainloop.glib import DBusGMainLoop
 dir = Path(__file__).parent
 
 from .utils import ipv4_to_u32, ipv6_to_u8_slice, set_proc_name
-from .common import VPNConnectionControlBase, ServiceBase
+from .common import VPNConnectionControlBase, ServiceBase, VPNConnectionConfiguration
 
 from gi.repository import GLib
 from pydbus import SessionBus, SystemBus
@@ -72,21 +72,20 @@ class NMVpnServiceState(enum.IntEnum):
 
 
 class VpnDBUSService(ServiceBase):
-    def __init__(self, ctl: VPNConnectionControlBase) -> None:
-        self.ctl = ctl
-        self.ctl.init(self)
+    def __init__(self, ctl_impl: type[VPNConnectionControlBase], state_base_dir: str) -> None:
+        self.ctl = ctl_impl(self, state_base_dir)
         self._state = NMVpnServiceState.NM_VPN_SERVICE_STATE_UNKNOWN
         self._connect_lock = None
 
-    def Connect(self, connection: dict[str, dict[str, Any]]):
+    def Connect(self, connection: VPNConnectionConfiguration):
         """Tells the plugin to connect. Interactive secrets requests (eg, emitting
          the SecretsRequired signal) are not allowed.
         Args:
             connection: Describes the connection to be established.
         """
-        logging.info("Connect() %r", connection)
+        logging.warning("Not implemented: Connect() %r", connection)
 
-    def ConnectInteractive(self, connection: dict[str, dict[str, Any]], details: dict[str, Any]) -> None:
+    def ConnectInteractive(self, connection: VPNConnectionConfiguration, details: dict[str, Any]) -> None:
         """Tells the plugin to connect, allowing interactive secrets requests (eg the
         plugin is allowed to emit the SecretsRequired signal if the VPN service
         indicates that it needs additional secrets during the connect process).
@@ -98,10 +97,14 @@ class VpnDBUSService(ServiceBase):
         if self._connect_lock:
             raise RuntimeError("Aleady connecting!")
 
+        connection_uuid = connection["connection"]["uuid"]
+        connection_name = connection["connection"]["id"]
+        vpn_data = connection["vpn"]["data"]
+        
         def _run():
             self._connect_lock = True
             try:
-                result = self.ctl.start(connection)
+                result = self.ctl.start(connection_uuid=connection_uuid, connection_name=connection_name, vpn_data=vpn_data)
                 logging.info("Connection Control started: %s", result)
                 # https://cgit.freedesktop.org/NetworkManager/NetworkManager/tree/libnm-core/nm-dbus-interface.h?id=ba6c2211e8f6aebc5e5b07b77ffee938593980a6
                 # https://gitlab.freedesktop.org/NetworkManager/NetworkManager/-/blob/main/src/libnm-core-public/nm-vpn-dbus-interface.h
@@ -174,7 +177,7 @@ class VpnDBUSService(ServiceBase):
         # TODO: lock
         threading.Thread(target=_run, daemon=True).start()
 
-    def NeedSecrets(self, connection: dict[str, dict[str, Any]]) -> str:
+    def NeedSecrets(self, connection: VPNConnectionConfiguration) -> str:
         """Asks the plugin whether the provided connection will require secrets to
         connect successfully.
         Args:
@@ -185,7 +188,7 @@ class VpnDBUSService(ServiceBase):
         logging.info("NeedSecrets() %r", connection)
         return ""
 
-    def NewSecrets(self, connection: dict[str, dict[str, Any]]) -> None:
+    def NewSecrets(self, connection: VPNConnectionConfiguration) -> None:
         """
         Called in response to a SecretsRequired signal to deliver updated secrets
         or other information to the plugin.
@@ -361,8 +364,7 @@ def main():
 
     signal.signal(signal.SIGTERM, quit_loop)
     with (SystemBus if os.getuid() == 0 else SessionBus)() as bus:
-        ctl = ctl_class(state_base_dir)
-        bus.publish(dbus_bus_name, (dbus_object_path, VpnDBUSService(ctl)))
+        bus.publish(dbus_bus_name, (dbus_object_path, VpnDBUSService(ctl_class, state_base_dir)))
         loop.run()
 
     logging.info("Exiting...")

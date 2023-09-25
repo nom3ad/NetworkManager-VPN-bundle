@@ -17,30 +17,20 @@ _DEFAULT_TAILSCALED_UP_TIMEOUT_SEC = 90
 
 
 class TailscaleControl(VPNConnectionControlBase):
-    def __init__(self, state_base_dir: str) -> None:
-        self._state_base_dir = state_base_dir
-        self._proc_tailscaled: Subprocess = None
-        self._proc_tailscale_cli: Subprocess = None
-        self.timeout = 60
-
-    def init(self, plugin: ServiceBase):
-        logging.info("TailscaleControl init")
-        self.plugin = plugin
-
-    def start(self, connection: VPNConnectionConfiguration):
+    _proc_tailscaled: Subprocess = None
+    _proc_tailscale_cli: Subprocess = None
+    _tailscale_socket_appear_timeout_sec = 60
+    
+    def start(self, *, connection_uuid:str, connection_name:str, vpn_data:dict[str, str]):
         self._assert_processes_not_running()
         if self._tailscale_sock_is_available():
             raise RuntimeError("tailscale socket is already present")
-        connection_uuid = connection["connection"]["uuid"]
-        connection_name = connection["connection"]["id"]
-        vpn_data = connection["vpn"]["data"]
-
         self.sock_path = vpn_data.get("sockpath", "").strip() or _DEFAULT_SOCKPATH
         self.tailscale_cli_cmd = ["tailscale", "--socket=" + self.sock_path]
         self.tailscaled_cmd = ["tailscaled", "-socket", self.sock_path]
 
-        if self._state_base_dir:
-            self.tailscaled_cmd.extend(("-statedir", os.path.join(self._state_base_dir, connection_uuid)))
+        if self.state_base_dir:
+            self.tailscaled_cmd.extend(("-statedir", os.path.join(self.state_base_dir, connection_uuid)))
 
         if listening_port := vpn_data.get("listening-port", "").strip():
             try:
@@ -64,7 +54,7 @@ class TailscaleControl(VPNConnectionControlBase):
         self._proc_tailscaled = Subprocess(self.tailscaled_cmd, stderr=stderr)
 
         logging.info("Wating for tailscaled to be up and running")
-        with timeout(self.timeout) as t:
+        with timeout(self._tailscale_socket_appear_timeout_sec) as t:
             while True:
                 if self._tailscale_sock_is_available():
                     break
@@ -94,23 +84,15 @@ class TailscaleControl(VPNConnectionControlBase):
         return result
 
     def _get_status(self):
-        stdout = subprocess.check_output([*self.tailscale_cli_cmd, "status", "--json"], timeout=10)
-        status = json.loads(stdout)
+        status = Subprocess.check_output_json(*self.tailscale_cli_cmd, "status", "--json", timeout=10)
         return status
 
     def _get_ips(self):
-        stdout = subprocess.check_output([*self.tailscale_cli_cmd, "ip"], timeout=10)
-        ipv4, ipv6 = None, None
-        for line in stdout.split(b"\n"):
-            try:
-                ip = ipaddress.ip_address(line)
-                if ip.version == 4:
-                    ipv4 = str(ip)
-                if ip.version == 6:
-                    ipv6 = str(ip)
-            except ValueError:
-                pass
-        return ipv4, ipv6
+        stdout = Subprocess.check_output_text(*self.tailscale_cli_cmd, "ip", timeout=10)
+        addresses = []
+        for line in stdout.split("\n"):
+            addresses.append(ipaddress.ip_address(line))
+        return addresses
 
     def _call_cli_up(self, vpn_data: dict[str, str]):
         tailscale_cli_up_cmd = [*self.tailscale_cli_cmd, "up", "--reset", "--json"]
@@ -136,7 +118,7 @@ class TailscaleControl(VPNConnectionControlBase):
             tailscale_cli_up_cmd.extend(shlex.split(extra_tailscale_up_args))
         logging.info("Calling tailscale up: %r", tailscale_cli_up_cmd)
         with Subprocess.bg_process(
-            tailscale_cli_up_cmd, name="tailscale up", process_timeout=up_timeout + 1, stdout=subprocess.PIPE
+            *tailscale_cli_up_cmd, name="tailscale up", process_timeout=up_timeout + 1, stdout=subprocess.PIPE
         ) as p:
             output = ""
             try:
@@ -169,7 +151,7 @@ class TailscaleControl(VPNConnectionControlBase):
 
     def _prompt_auth(self, auth_url: str, qr_png_b64: str) -> None:
         message = f'<b>To authenticate, visit: <i><a href="{auth_url}">{auth_url}</a></i></b>'
-        self.plugin.prompt_auth(
+        self.service.prompt_auth(
             {
                 "auth_type": "web_link",
                 "message": message,

@@ -39,6 +39,10 @@ build-gtk: build-auth-dialog
 build-auth-dialog:
 	ninja -C build nm-vpn-bundle-auth-dialog
 
+run-plugin-service:
+	select p in $$(find plugin-service  -name '*_ctl.py' | cut -d '/' -f2 | cut -d '_' -f1 ); do [[ -n $$p ]] && break; done && \
+	./plugin-service/provider-exec --provider=$$p
+
 run-nm-connection-editor:
 	nm-connection-editor --edit "$(TEST_VPN_UUID)"
 
