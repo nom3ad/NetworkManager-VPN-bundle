@@ -340,7 +340,7 @@ def main():
         state_base_dir = f"/etc/NetworkManager/{dbus_bus_name}"
 
     log_level = logging.INFO
-    if os.environ.get("NM_VPN_DEV_MODE", "").lower() in ("true", "1"):
+    if os.environ.get("VPN_BUNDLE_DEV_MODE", "").lower() in ("true", "1"):
         log_level = logging.DEBUG
     else:
         if int(os.environ.get("NM_VPN_LOG_LEVEL", "0")) > 1:
@@ -372,4 +372,4 @@ def main():
         bus.publish(dbus_bus_name, (dbus_object_path, VpnDBUSService(ctl_class, state_base_dir)))
         loop.run()
 
-    logging.info("Exiting...")
+    logging.info("Adios!")

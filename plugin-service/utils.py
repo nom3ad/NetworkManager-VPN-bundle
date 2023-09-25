@@ -77,9 +77,8 @@ class Subprocess(subprocess.Popen):
     def is_running(self):
         return self.poll() is None
 
-    def __init__(self, *args, **kwargs):
-        logging.debug("Exec() %s", args)
-        name = kwargs.pop("name", None)
+    def __init__(self, *args, name=None, **kwargs):
+        logging.debug("Exec() %s", args[0])
         super().__init__(*args, **kwargs)
         Subprocess._refs.add(self)
         self.name = self.args[0] if name is None else name
@@ -233,9 +232,27 @@ def http_rquest(method, url, data, headers=None, timeout=10):
         headers["Content-Type"] = "application/json"
     elif isinstance(data, str):
         data = data.encode("utf-8")
-    req = request.Request(url, method=method, data=data)
-    with request.urlopen(req, timeout=timeout) as f:
-        return f.read().decode("utf-8")
+    req = request.Request(url, method=method, data=data, headers=headers)
+    try:
+        with request.urlopen(req, timeout=timeout) as r:
+            resp = r
+            return r.read().decode("utf-8")
+    except request.HTTPError as e:
+        resp = e
+        logging.error(
+            "HTTP Error - Response:%r | Headers:%r", resp.read().decode("utf-8", errors="replace"), dict(resp.headers)
+        )
+        raise
+    finally:
+        logging.debug(
+            "http_rquest(%s %s d=%r h=%r) -> (code=%s h=%r",
+            method,
+            url,
+            data,
+            headers,
+            resp.status if resp else None,
+            dict(resp.headers) if resp else None,
+        )
 
 
 def ip_interface_addresses_by_family(addrs):
