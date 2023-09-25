@@ -100,11 +100,13 @@ class VpnDBUSService(ServiceBase):
         connection_uuid = connection["connection"]["uuid"]
         connection_name = connection["connection"]["id"]
         vpn_data = connection["vpn"]["data"]
-        
+
         def _run():
             self._connect_lock = True
             try:
-                result = self.ctl.start(connection_uuid=connection_uuid, connection_name=connection_name, vpn_data=vpn_data)
+                result = self.ctl.start(
+                    connection_uuid=connection_uuid, connection_name=connection_name, vpn_data=vpn_data
+                )
                 logging.info("Connection Control started: %s", result)
                 # https://cgit.freedesktop.org/NetworkManager/NetworkManager/tree/libnm-core/nm-dbus-interface.h?id=ba6c2211e8f6aebc5e5b07b77ffee938593980a6
                 # https://gitlab.freedesktop.org/NetworkManager/NetworkManager/-/blob/main/src/libnm-core-public/nm-vpn-dbus-interface.h
@@ -131,9 +133,9 @@ class VpnDBUSService(ServiceBase):
                         # IP address of the internal gateway of the subnet the VPN interface is Fon, if the VPN uses subnet configuration (network byte order)
                         # "internal-gateway":  Variant("u", 0)
                         # Internal IP address of the local VPN interface (network byte order) # XXX Workaround: WTF? why byteorder is not respected.
-                        "address": Variant("u", ipv4_to_u32(result.ipv4)),
+                        "address": Variant("u", ipv4_to_u32(result.ipv4.ip)),
                         "prefix": Variant(
-                            "u", result.ipv4prefix
+                            "u", result.ipv4.network.prefixlen
                         ),  # uint32: IP prefix of the VPN interface; 1 - 32 inclusive
                         # IP addresses of DNS servers for the VPN (network byte order) Array<uint32>:
                         "dns": Variant("au", [ipv4_to_u32(i) for i in result.dns if i.version == 4]),
@@ -156,9 +158,9 @@ class VpnDBUSService(ServiceBase):
                 if result.ipv6:
                     ip6_config = {
                         # /* array of uint8: internal IP address of the local VPN interface (network byte order) */
-                        "address": Variant("ay", ipv6_to_u8_slice(result.ipv6)),
+                        "address": Variant("ay", ipv6_to_u8_slice(result.ipv6.ip)),
                         # /* uint32: prefix length of the VPN interface; 0 - 128 inclusive */
-                        "prefix": Variant("u", result.ipv6prefix),
+                        "prefix": Variant("u", result.ipv6.network.prefixlen),
                         # /* array of array of uint8: IP addresses of DNS servers for the VPN (network byte order) */
                         "dns": Variant("aay", [ipv6_to_u8_slice(i) for i in result.dns if i.version == 6]),
                         "never-default": Variant("b", result.never_default_route),
@@ -289,7 +291,7 @@ class VpnDBUSService(ServiceBase):
         getattr(self, signal_name).emit(value, *args)
 
     def prompt_auth(self, prompt: dict, *items: str):
-        message = json.dumps(prompt, separators=(',', ':'))
+        message = json.dumps(prompt, separators=(",", ":"))
         logging.info("prompt_auth() prompt=%r items=%r", prompt, items)
         self.SecretsRequired.emit(message, items)
 

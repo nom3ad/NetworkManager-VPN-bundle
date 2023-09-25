@@ -131,10 +131,8 @@ VPNConnectionConfiguration = TypedDict(
 @dataclass
 class ConnectionResult(ABC):
     gateway: ipaddress.IPv4Address
-    ipv4: ipaddress.IPv4Address
-    ipv4prefix: int = 32
-    ipv6: Optional[ipaddress.IPv6Address] = None
-    ipv6prefix: int = 128
+    ipv4: ipaddress.IPv4Interface
+    ipv6: Optional[ipaddress.IPv6Interface] = None
     dns: tuple[ipaddress.IPv4Address | ipaddress.IPv6Address] = ()
     tundev: Optional[str] = None
     mtu: int = None
@@ -148,7 +146,7 @@ class VPNConnectionControlBase(ABC):
         self.state_base_dir = state_base_dir
 
     @abstractmethod
-    def start(self, *, connection_uuid:str, connection_name:str, vpn_data:dict[str, str]) -> ConnectionResult:
+    def start(self, *, connection_uuid: str, connection_name: str, vpn_data: dict[str, str]) -> ConnectionResult:
         pass
 
     @abstractmethod

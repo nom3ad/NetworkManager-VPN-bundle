@@ -8,17 +8,19 @@ import ipaddress
 import logging
 import re
 import json
+from typing import Any
 from weakref import WeakSet
 import atexit
+from urllib import request
 
 
 def ipv4_to_u32(addr: str | ipaddress.IPv4Address):
     return struct.unpack("I", socket.inet_aton(str(addr)))[0]  # native byte-order
     # XX int(ipaddress.IPv4Address(addr)) # big-endian/netowrk-byte-order
 
+
 def ipv6_to_u8_slice(addr: str | ipaddress.IPv6Address):
     return struct.unpack("16B", socket.inet_pton(socket.AF_INET6, str(addr)))
-
 
 
 class timeout:
@@ -64,7 +66,6 @@ class timeout:
 
 
 class Subprocess(subprocess.Popen):
-
     _refs = WeakSet()
 
     DEFAULT_GRACEFUL_EXIT_TIMEOUT = 3
@@ -149,15 +150,14 @@ class Subprocess(subprocess.Popen):
 
     @staticmethod
     def check_output(*popenargs, name=None, process_timeout=None, graceful_exit_timeout=None, **kwargs):
-        if 'input' in kwargs and kwargs['input'] is None:
+        if "input" in kwargs and kwargs["input"] is None:
             # Explicitly passing input=None was previously equivalent to passing an
             # empty string. That is maintained here for backwards compatibility.
-            if kwargs.get('universal_newlines') or kwargs.get('text') or kwargs.get('encoding') \
-                    or kwargs.get('errors'):
-                empty = ''
+            if kwargs.get("universal_newlines") or kwargs.get("text") or kwargs.get("encoding") or kwargs.get("errors"):
+                empty = ""
             else:
-                empty = b''
-            kwargs['input'] = empty
+                empty = b""
+            kwargs["input"] = empty
         with Subprocess(popenargs, name=name, **kwargs, stdin=subprocess.PIPE) as p:
             try:
                 stdout, stderr = p.communicate(input, timeout=timeout)
@@ -167,21 +167,31 @@ class Subprocess(subprocess.Popen):
                 raise
             retcode = p.poll()
             if retcode:
-                raise subprocess.CalledProcessError(retcode, p.args,
-                                        output=stdout, stderr=stderr)
+                raise subprocess.CalledProcessError(retcode, p.args, output=stdout, stderr=stderr)
         return stdout
-    
+
     @staticmethod
-    def check_output_json(*popenargs, name=None, process_timeout=None, graceful_exit_timeout=None, **kwargs):
-        stdout = Subprocess.check_output(*popenargs, name=name, process_timeout=process_timeout, graceful_exit_timeout=graceful_exit_timeout, **kwargs)
+    def check_output_json(*popenargs, name=None, process_timeout=None, graceful_exit_timeout=None, **kwargs) -> Any:
+        stdout = Subprocess.check_output(
+            *popenargs,
+            name=name,
+            process_timeout=process_timeout,
+            graceful_exit_timeout=graceful_exit_timeout,
+            **kwargs,
+        )
         return json.loads(stdout)
 
     @staticmethod
-    def check_output_text(*popenargs, name=None, process_timeout=None, graceful_exit_timeout=None, **kwargs):
-        stdout = Subprocess.check_output(*popenargs, name=name, process_timeout=process_timeout, graceful_exit_timeout=graceful_exit_timeout, **kwargs)
+    def check_output_text(*popenargs, name=None, process_timeout=None, graceful_exit_timeout=None, **kwargs) -> str:
+        stdout = Subprocess.check_output(
+            *popenargs,
+            name=name,
+            process_timeout=process_timeout,
+            graceful_exit_timeout=graceful_exit_timeout,
+            **kwargs,
+        )
         return stdout.decode("utf-8", errors="replace")
-        
-        
+
     @atexit.register
     @staticmethod
     def _cleanup():
@@ -189,8 +199,6 @@ class Subprocess(subprocess.Popen):
             if p.is_running:
                 logging.warn("atexit(): Process %r still running. try gracefull kill", p)
                 p.graceful_kill(Subprocess.DEFAULT_GRACEFUL_EXIT_TIMEOUT)
-                
-
 
 
 def set_proc_name(name: str):
@@ -216,3 +224,25 @@ def iter_until(fn, sentinal_value, sentinal_error):
             yield v
         except sentinal_error as e:
             return e
+
+
+def http_rquest(method, url, data, headers=None, timeout=10):
+    headers = headers or {}
+    if isinstance(data, (dict, list, tuple)):
+        data = json.dumps(data).encode("utf-8")
+        headers["Content-Type"] = "application/json"
+    elif isinstance(data, str):
+        data = data.encode("utf-8")
+    req = request.Request(url, method=method, data=data, timeout=timeout)
+    with request.urlopen(req) as f:
+        return f.read().decode("utf-8")
+
+
+def ip_interface_addresses_by_family(addrs):
+    ipv4, ipv6 = None, None
+    for iface in (ipaddress.ip_interface(a) for a in addrs):
+        if iface.version == 4:
+            ipv4 = iface
+        if iface.version == 6:
+            ipv6 = iface
+    return ipv4, ipv6

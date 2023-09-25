@@ -5,11 +5,11 @@ import os
 import stat
 import select
 import re
-import ipaddress
+from ipaddress import ip_address
 import json
 import shlex
 import subprocess
-from .utils import timeout, as_valid_if_name, Subprocess, iter_until
+from .utils import timeout, as_valid_if_name, Subprocess, iter_until, ip_interface_addresses_by_family
 from .common import VPNConnectionControlBase, ServiceBase, ConnectionResult, VPNConnectionConfiguration
 
 _DEFAULT_SOCKPATH = f"/var/run/tailscale/tailscaled.sock"
@@ -20,8 +20,8 @@ class TailscaleControl(VPNConnectionControlBase):
     _proc_tailscaled: Subprocess = None
     _proc_tailscale_cli: Subprocess = None
     _tailscale_socket_appear_timeout_sec = 60
-    
-    def start(self, *, connection_uuid:str, connection_name:str, vpn_data:dict[str, str]):
+
+    def start(self, *, connection_uuid: str, connection_name: str, vpn_data: dict[str, str]):
         self._assert_processes_not_running()
         if self._tailscale_sock_is_available():
             raise RuntimeError("tailscale socket is already present")
@@ -66,19 +66,14 @@ class TailscaleControl(VPNConnectionControlBase):
         logging.info("tailscale status: %s", status)
         if status["BackendState"] != "Running":
             raise RuntimeError("Could not up tailscale")
-        for ip in (ipaddress.ip_address(ip) for ip in status["Self"]["TailscaleIPs"]):
-            if ip.version == 4:
-                ipv4 = ip
-            if ip.version == 6:
-                ipv6 = ip
+        ipv4, ipv6 = ip_interface_addresses_by_family(status["Self"]["TailscaleIPs"])
         result = ConnectionResult(
-            # dns=["100.100.100.100"],  if use this, NerworkManager will update /etc/resolv.conf, whcih overwrites changes updated by tailscaled.
+            # dns=[ip_address("100.100.100.100")],  if use this, NerworkManager will update /etc/resolv.conf, whcih overwrites changes updated by tailscaled.
             mtu=1280,
-            ipv4prefix=32,
             ipv4=ipv4,
             ipv6=ipv6,
             tundev=tundev,
-            gateway=ipaddress.IPv4Address("255.255.255.255"),  # dummy
+            gateway=ip_address("255.255.255.255"),  # dummy
         )
 
         return result
@@ -91,7 +86,7 @@ class TailscaleControl(VPNConnectionControlBase):
         stdout = Subprocess.check_output_text(*self.tailscale_cli_cmd, "ip", timeout=10)
         addresses = []
         for line in stdout.split("\n"):
-            addresses.append(ipaddress.ip_address(line))
+            addresses.append(ip_address(line))
         return addresses
 
     def _call_cli_up(self, vpn_data: dict[str, str]):
