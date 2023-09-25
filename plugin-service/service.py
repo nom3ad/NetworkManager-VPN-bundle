@@ -205,13 +205,16 @@ class VpnDBUSService(ServiceBase):
         """Disconnect the plugin."""
         logging.info("Disconnect() | connect_lock: %s", self._connect_lock)
         self._stop()
-        quit_loop()
+        quit_loop("Disconnect()")
 
     def _stop(self):
         if self._state == NMVpnServiceState.NM_VPN_SERVICE_STATE_STOPPED:
             return
         self._change_state(NMVpnServiceState.NM_VPN_SERVICE_STATE_STOPPING)
-        self.ctl.stop()
+        try:
+            self.ctl.stop()
+        except Exception as e:
+            logging.exception("stop() failed: %r", e)
         self._change_state(NMVpnServiceState.NM_VPN_SERVICE_STATE_STOPPED)
 
     def SetConfig(self, config: dict[str, Any]) -> None:
@@ -313,8 +316,8 @@ class VpnDBUSService(ServiceBase):
 VpnDBUSService.__doc__ = (dir / "nm-vpn-plugin.xml").read_text()
 
 
-def quit_loop(*a, **k):
-    logging.info("Quit Glib main loop")
+def quit_loop(reason):
+    logging.info("Quit Glib main loop. Reason= %s", reason)
     loop.quit()
 
 
@@ -364,7 +367,7 @@ def main():
     )
     logging.info("Using provider: %s class=%r", provider, ctl_class)
 
-    signal.signal(signal.SIGTERM, quit_loop)
+    signal.signal(signal.SIGTERM, lambda *a: quit_loop("SIGTERM"))
     with (SystemBus if os.getuid() == 0 else SessionBus)() as bus:
         bus.publish(dbus_bus_name, (dbus_object_path, VpnDBUSService(ctl_class, state_base_dir)))
         loop.run()

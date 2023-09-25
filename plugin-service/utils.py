@@ -78,6 +78,7 @@ class Subprocess(subprocess.Popen):
         return self.poll() is None
 
     def __init__(self, *args, **kwargs):
+        logging.debug("Exec() %s", args)
         name = kwargs.pop("name", None)
         super().__init__(*args, **kwargs)
         Subprocess._refs.add(self)
@@ -174,7 +175,11 @@ class Subprocess(subprocess.Popen):
             graceful_exit_timeout=graceful_exit_timeout,
             **kwargs,
         )
-        return json.loads(stdout)
+        try:
+            return json.loads(stdout)
+        except json.JSONDecodeError:
+            logging.error("Failed to decode json: %s", stdout)
+            raise
 
     @staticmethod
     def check_output_text(*popenargs, name=None, process_timeout=None, graceful_exit_timeout=None, **kwargs) -> str:
