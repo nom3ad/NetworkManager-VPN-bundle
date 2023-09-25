@@ -55,7 +55,7 @@ class ZeroTierControl(VPNConnectionControlBase):
 
         # iface_in_devicemap_file = None
         # try:
-        #     for line in Path(self.service_work_dir, "devicemap").read_text().splitlines():
+        #     for line in pathlib.Path(self.service_work_dir, "devicemap").read_text().splitlines():
         #         if line.startswith(f"{self.network_id}="):
         #             iface_in_devicemap_file = line.split("=")[1].strip()
         #             break
@@ -64,19 +64,19 @@ class ZeroTierControl(VPNConnectionControlBase):
 
         # for iface in get_network_interfaces_by_ip(ipv4 or ipv6):
         #     if iface_in_devicemap_file is None or iface == iface_in_devicemap_file:
-        #         tundev = iface
+        #         dev = iface
         #         break
         # else:
-        #     raise RuntimeError(f"failed to find tundev having ip {ipv4 or ipv6} | {iface_in_devicemap_file=}")
+        #     raise RuntimeError(f"failed to find dev having ip {ipv4 or ipv6} | {iface_in_devicemap_file=}")
 
-        tundev = state["portDeviceName"]
+        dev = state["portDeviceName"]
 
         return ConnectionResult(
             ipv4=ipv4,
             ipv6=ipv6,
             mtu=mtu,
             # dns=dns,
-            tundev=tundev,
+            dev=dev,
             gateway=ipaddress.IPv4Address("255.255.255.255"),  # dummy
         )
 

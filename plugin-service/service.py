@@ -113,7 +113,7 @@ class VpnDBUSService(ServiceBase):
                 # https://gitlab.freedesktop.org/NetworkManager/NetworkManager/-/blob/main/src/libnm-core-public/nm-vpn-dbus-interface.h
                 general_config = {
                     # VPN interface name (tun0, tap0, etc)
-                    "tundev": Variant("s", result.tundev),
+                    "tundev": Variant("s", result.dev),
                     # "pac": Variant("s", ""),  # Proxy PAC, string
                     #  Login message
                     "banner": Variant("s", result.banner),

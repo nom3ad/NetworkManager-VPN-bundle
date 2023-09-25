@@ -42,8 +42,8 @@ class TailscaleControl(VPNConnectionControlBase):
             except:
                 raise RuntimeError(f"Invalid port value: '{listening_port}'")
 
-        tundev = vpn_data.get("tun-device-name", "").strip() or find_valid_if_name(connection_name)
-        self.tailscaled_cmd.extend(("-tun", tundev))
+        dev = vpn_data.get("tun-device-name", "").strip() or find_valid_if_name(connection_name)
+        self.tailscaled_cmd.extend(("-tun", dev))
 
         if log_verbosity := vpn_data.get("log-verbosity", "").strip():
             self.tailscaled_cmd.extend(("-verbose", log_verbosity))
@@ -55,7 +55,7 @@ class TailscaleControl(VPNConnectionControlBase):
         stderr = sys.stderr
         if log_file := vpn_data.get("log-file", ""):
             stderr = open(log_file, "wb+")
-        self._proc_tailscaled = Subprocess(self.tailscaled_cmd, "tailscaled", stderr=stderr)
+        self._proc_tailscaled = Subprocess(self.tailscaled_cmd, name="tailscaled", stderr=stderr)
 
         logging.info("Wating for tailscaled to be up and running")
         with timeout(self._tailscale_socket_appear_timeout_sec) as t:
@@ -76,7 +76,7 @@ class TailscaleControl(VPNConnectionControlBase):
             mtu=1280,
             ipv4=ipv4,
             ipv6=ipv6,
-            tundev=tundev,
+            dev=dev,
             gateway=ip_address("255.255.255.255"),  # dummy
         )
 

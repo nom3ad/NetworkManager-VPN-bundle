@@ -133,7 +133,7 @@ class ConnectionResult(ABC):
     ipv4: ipaddress.IPv4Interface
     ipv6: Optional[ipaddress.IPv6Interface] = None
     dns: tuple[ipaddress.IPv4Address | ipaddress.IPv6Address] = ()
-    tundev: Optional[str] = None
+    dev: Optional[str] = None
     mtu: int = None
     banner: str = "Beep Beep!"
     never_default_route: bool = True

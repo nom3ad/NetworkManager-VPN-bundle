@@ -3,6 +3,7 @@ import contextlib
 import ipaddress
 import json
 import logging
+import math
 import re
 import socket
 import struct
@@ -215,7 +216,20 @@ def set_proc_name(name: str):
 
 def find_valid_if_name(s: str):
     ifname = re.sub(r"[^a-zA-Z0-9]", "", s)[:15]
-    existing_ifaces = set()
+    existing_ifaces = netifaces.interfaces()
+    suffix = "0"
+    while ifname in existing_ifaces:
+        ifname = ifname[: -len(suffix)] + suffix
+        suffix = str(int(suffix) + 1)
+    return ifname
+
+
+def is_interface_ready(iface: str):
+    if iface in netifaces.interfaces():
+        if get_iface_addresses(iface):
+            return True
+        return False
+    return None
 
 
 def iter_until(fn, sentinal_value, sentinal_error):
@@ -272,22 +286,42 @@ def ip_interface_addresses_by_family(addrs):
 AnyIPAddr = ipaddress.IPv4Address | ipaddress.IPv6Address | ipaddress.IPv4Interface | ipaddress.IPv6Interface
 
 
-def get_network_interfaces_by_ip(ip: AnyIPAddr | str):
+def to_prefix_len(s: str) -> int:
+    if "/" in s:
+        return int(s.split("/")[1])
+    try:
+        return math.floor(math.log2(2**32 - int(ipaddress.ip_address(s))))  # s = 255.x.y.z
+    except ValueError:
+        return 32
+
+
+def get_iface_addresses(iface: str, ipv4=True, ipv6=True) -> list[ipaddress.IPv4Interface | ipaddress.IPv6Interface]:
+    addresses = []
+    families = (socket.AF_INET if ipv4 else None, socket.AF_INET6 if ipv6 else None)
+    for family in families:
+        for iface_addrs in netifaces.ifaddresses(iface).get(family, []):
+            addr_str = iface_addrs["addr"]
+            prefix_len = to_prefix_len(iface_addrs["netmask"])
+            ifaddr = ipaddress.ip_interface(addr_str + "/" + str(prefix_len))
+            addresses.append(ipaddress.ip_interface(ifaddr))
+    return addresses
+
+
+def get_network_interfaces_by_ip(ip: AnyIPAddr | str) -> list[str]:
     try:
         addr = ipaddress.ip_address(ip)
-        mask = None
+        prefixlen = None
     except ValueError:
         ip_if = ipaddress.ip_interface(ip)
         addr = ip_if.ip
-        mask = ip_if.netmask
+        prefixlen = ip_if.network.prefixlen
 
     interfaces_with_ip = []
     family = socket.AF_INET if addr.version == 4 else socket.AF_INET6
     for iface in netifaces.interfaces():
         for iface_addr in netifaces.ifaddresses(iface).get(family, []):
-            print(iface_addr, addr, mask)
             if ipaddress.ip_address(iface_addr["addr"]) == addr and (
-                mask is None or ipaddress.ip_address(iface_addr["netmask"]) == mask
+                prefixlen is None or to_prefix_len(iface_addr["netmask"]) == prefixlen
             ):
                 interfaces_with_ip.append(iface)
     return interfaces_with_ip
