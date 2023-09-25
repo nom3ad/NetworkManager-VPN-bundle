@@ -150,7 +150,7 @@ class VPNConnectionControlBase(ABC):
         pass
 
     @abstractmethod
-    def terminate(self):
+    def stop(self):
         pass
 
 

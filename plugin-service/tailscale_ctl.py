@@ -167,7 +167,7 @@ class TailscaleControl(VPNConnectionControlBase):
         if self._proc_tailscale_cli and self._proc_tailscale_cli.poll() is not None:
             raise RuntimeError("tailscale process already running")
 
-    def terminate(self):
+    def stop(self):
         if self._proc_tailscale_cli:
             self._proc_tailscale_cli.graceful_kill()
             self._proc_tailscale_cli = None

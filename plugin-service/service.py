@@ -211,7 +211,7 @@ class VpnDBUSService(ServiceBase):
         if self._state == NMVpnServiceState.NM_VPN_SERVICE_STATE_STOPPED:
             return
         self._change_state(NMVpnServiceState.NM_VPN_SERVICE_STATE_STOPPING)
-        self.ctl.terminate()
+        self.ctl.stop()
         self._change_state(NMVpnServiceState.NM_VPN_SERVICE_STATE_STOPPED)
 
     def SetConfig(self, config: dict[str, Any]) -> None:
