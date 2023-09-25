@@ -149,18 +149,10 @@ class Subprocess(subprocess.Popen):
             t.join(1)
 
     @staticmethod
-    def check_output(*popenargs, name=None, process_timeout=None, graceful_exit_timeout=None, **kwargs):
-        if "input" in kwargs and kwargs["input"] is None:
-            # Explicitly passing input=None was previously equivalent to passing an
-            # empty string. That is maintained here for backwards compatibility.
-            if kwargs.get("universal_newlines") or kwargs.get("text") or kwargs.get("encoding") or kwargs.get("errors"):
-                empty = ""
-            else:
-                empty = b""
-            kwargs["input"] = empty
-        with Subprocess(popenargs, name=name, **kwargs, stdin=subprocess.PIPE) as p:
+    def check_output(*popenargs, name=None, input="", process_timeout=None, graceful_exit_timeout=None, **kwargs):
+        with Subprocess(popenargs, name=name, **kwargs, stdin=subprocess.PIPE, stdout=subprocess.PIPE) as p:
             try:
-                stdout, stderr = p.communicate(input, timeout=timeout)
+                stdout, stderr = p.communicate(input, timeout=process_timeout)
             except:  # Including KeyboardInterrupt, communicate handled that.
                 p.graceful_kill(graceful_exit_timeout)
                 # We don't call process.wait() as .__exit__ does that for us.

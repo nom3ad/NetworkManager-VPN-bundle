@@ -79,11 +79,11 @@ class TailscaleControl(VPNConnectionControlBase):
         return result
 
     def _get_status(self):
-        status = Subprocess.check_output_json(*self.tailscale_cli_cmd, "status", "--json", timeout=10)
+        status = Subprocess.check_output_json(*self.tailscale_cli_cmd, "status", "--json", process_timeout=10)
         return status
 
     def _get_ips(self):
-        stdout = Subprocess.check_output_text(*self.tailscale_cli_cmd, "ip", timeout=10)
+        stdout = Subprocess.check_output_text(*self.tailscale_cli_cmd, "ip", process_timeout=10)
         addresses = []
         for line in stdout.split("\n"):
             addresses.append(ip_address(line))
