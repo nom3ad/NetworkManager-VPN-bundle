@@ -6,13 +6,20 @@ module_name=$(basename "$module_dir")
 
 if [[ -x "$module_parent/.venv/bin/python" ]]; then
     PYTHON_BIN="$module_parent/.venv/bin/python"
-    echo " >>>>  Detected virtualenv ($PYTHON_BIN) | Running in Dev Mode. pwd=$(pwd) module_dir=$module_dir bin=$0 args=$*" >&2
-    # export NM_VPN_LOG_SYSLOG=1
     export NM_VPN_DEV_MODE=true
 elif command -v python3 &>/dev/null; then
     PYTHON_BIN="python3"
 else
     PYTHON_BIN="python"
+fi
+
+if [[ -e "$module_dir/.dev" ]]; then
+    export NM_VPN_DEV_MODE=true
+fi
+
+if [[ $NM_VPN_DEV_MODE == true ]]; then
+    # export NM_VPN_LOG_SYSLOG=1
+    echo " >>>>  Running in Dev Mode | PYTHON_BIN=($PYTHON_BIN) pwd=$(pwd) module_dir=$module_dir exe=$0 args=$*" >&2
 fi
 
 if [[ "$*" != *--provider* ]]; then
