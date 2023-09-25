@@ -1,0 +1,105 @@
+{
+    "id": "weron",
+    "label": "Weron Overlay Network",
+    "description": "Overlay networks based on WebRTC (https://github.com/pojntfx/weron)",
+    "form": [
+        {
+            "section": "Basic",
+            "inputs": [
+                {
+                    "id": "community",
+                    "type": "string",
+                    "label": "Community ID",
+                    "description": "ID of community to join",
+                    "required": true
+                },
+                {
+                    "id": "password",
+                    "type": "string",
+                    "is_secret": true,
+                    "label": "Community password",
+                    "description": "Password for community",
+                    "required": true
+                },
+                {
+                    "id": "key",
+                    "type": "string",
+                    "is_secret": true,
+                    "label": "Community encryption key",
+                    "description": "Encryption key for community",
+                    "required": true
+                },
+                {
+                    "id": "ips",
+                    "type": "string",
+                    "label": "IP Adresses",
+                    "description": "Comma-separated list of IP networks to claim an IP address from and and give to the TUN device (i.e. 2001:db8::1/32,192.0.2.1/24)",
+                    "required": true
+                },
+                {
+                    "id": "static",
+                    "type": "boolean",
+                    "label": "Claim static IP",
+                    "description": "Try to claim the exact IPs specified statically instead of selecting a random one from the specified network",
+                    "default": false,
+                    "required": false
+                },
+                {
+                    "id": "raddr",
+                    "type": "string",
+                    "label": "Signaler address",
+                    "description": "Remote address (default 'wss://weron.up.railway.app/')",
+                    "placeholder": "wss://weron.up.railway.app/",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "section": "Advanced",
+            "inputs": [
+                {
+                    "id": "dev",
+                    "type": "string",
+                    "label": "name of TUN/TAP device",
+                    "description": "Specify a different primary port. If this is not given the default is 9993. If zero is given a random port is chosen each time.",
+                    "placeholder": "<based on connection name>",
+                    "required": false
+                },
+                {
+                    "id": "force-relay",
+                    "type": "boolean",
+                    "label": "Force Relay",
+                    "description": "Force usage of TURN servers",
+                    "default": false,
+                    "required": false
+                },
+                {
+                    "id": "ice",
+                    "type": "string",
+                    "label": "ICE Servers",
+                    "description": "Comma-separated list of STUN servers (in format stun:host:port) and TURN servers to use (in format username:credential@turn:host:port) (i.e. username:credential@turn:global.turn.twilio.com:3478?transport=tcp)",
+                    "placeholder": "stun:stun.l.google.com:19302",
+                    "required": false
+                },
+                {
+                    "id": "verbose",
+                    "type": "integer",
+                    "label": "Log verbosity",
+                    "description": "Verbosity level (0 is disabled, default is info, 7 is trace) (default 5)",
+                    "default": 5,
+                    "min_value": 0,
+                    "max_value": 7,
+                    "required": false
+                },
+                {
+                    "id": "weron-bin",
+                    "type": "string",
+                    "label": "weron binary path",
+                    "description": "path to weron binary",
+                    "placeholder": "weron",
+                    "required": false
+                }
+            ]
+        }
+    ]
+}
