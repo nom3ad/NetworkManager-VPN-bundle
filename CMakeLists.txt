@@ -131,10 +131,10 @@ IF(RPM_BUILD)
 ENDIF()
 set(CPACK_PACKAGE_NAME "networkmanager-vpn-bundle")
 set(CPACK_PACKAGE_DESCRIPTION "Collection of many 3rdparty VPN support for NetworkManager")
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "libnm0 (>= 1.1.90), libc6 (>= 2.4), libglib2.0-0 (>= 2.24.0), libgtk-3-0 (>= 3.0.0), python3-pydbus")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "libnm0 (>= 1.1.90), libc6 (>= 2.4), libglib2.0-0 (>= 2.24.0), libgtk-3-0 (>= 3.0.0), python3-pydbus, python-netifaces")
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "nom3ad") #required
 set(CPACK_RPM_PACKAGE_LICENSE "MIT") 
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY ${CPACK_PACKAGE_DESCRIPTION}) 
-set(CPACK_RPM_PACKAGE_REQUIRES "libnm, python-pydbus") 
+set(CPACK_RPM_PACKAGE_REQUIRES "libnm, python-pydbus, python-netifaces") 
 
 INCLUDE(CPack)

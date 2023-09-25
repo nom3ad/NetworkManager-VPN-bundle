@@ -53,7 +53,7 @@ class timeout:
 
     def sleep(self, sec):
         if self.timedout:
-            raise TimeoutError(description=self.description)
+            raise TimeoutError(self.description)
         self._sleep_orginal(sec)
 
     def __enter__(self):
@@ -162,6 +162,7 @@ class Subprocess(subprocess.Popen):
                 raise
             retcode = p.poll()
             if retcode:
+                logging.error("Process %r failed with exit code %d| stdout=%s stderr=%s", p, retcode, stdout, stderr)
                 raise subprocess.CalledProcessError(retcode, p.args, output=stdout, stderr=stderr)
         return stdout
 
@@ -263,3 +264,29 @@ def ip_interface_addresses_by_family(addrs):
         if iface.version == 6:
             ipv6 = iface
     return ipv4, ipv6
+
+
+def get_network_interfaces_by_ip(
+    ip: ipaddress.IPv4Address | ipaddress.IPv6Address | ipaddress.IPv4Interface | ipaddress.IPv6Interface | str,
+):
+    import netifaces
+    import socket
+
+    try:
+        addr = ipaddress.ip_address(ip)
+        mask = None
+    except ValueError:
+        ip_if = ipaddress.ip_interface(ip)
+        addr = ip_if.ip
+        mask = ip_if.netmask
+
+    interfaces_with_ip = []
+    family = socket.AF_INET if addr.version == 4 else socket.AF_INET6
+    for iface in netifaces.interfaces():
+        for iface_addr in netifaces.ifaddresses(iface).get(family, []):
+            print(iface_addr, addr, mask)
+            if ipaddress.ip_address(iface_addr["addr"]) == addr and (
+                mask is None or ipaddress.ip_address(iface_addr["netmask"]) == mask
+            ):
+                interfaces_with_ip.append(iface)
+    return interfaces_with_ip

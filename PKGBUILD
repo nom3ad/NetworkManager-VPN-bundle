@@ -12,6 +12,7 @@ depends=('networkmanager'
     'nm-connection-editor'
     # 'python-dbus'  # provided by dbus-python
     'python-pydbus'
+    'python-netifaces'
 )
 optdepends=()
 options=()

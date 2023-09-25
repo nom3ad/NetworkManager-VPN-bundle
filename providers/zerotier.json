@@ -1,0 +1,57 @@
+{
+    "id": "zerotier",
+    "label": "ZeroTier VPN",
+    "description": "ZeroTier is a p2p VPN. (https://www.zerotier.com/)",
+    "form": [
+        {
+            "section": "Basic",
+            "inputs": [
+                {
+                    "id": "network-id",
+                    "type": "string",
+                    "label": "Network ID",
+                    "description": " 16 hex char  network ID of the network you wish to join",
+                    "regex": "^[a-f0-9]{16}$",
+                    "min_length": 16,
+                    "max_length": 16,
+                    "required": true
+                },
+                {
+                    "id": "api-token",
+                    "type": "string",
+                    "is_secret": true,
+                    "label": "API Token",
+                    "regex": "^[a-zA-Z0-9]{32}$",
+                    "min_length": 32,
+                    "max_length": 32,
+                    "description": "Optional API token to automatically authorize this node.",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "section": "Advanced",
+            "inputs": [
+                {
+                    "id": "primary-port",
+                    "type": "integer",
+                    "label": "Primary Port",
+                    "description": "Specify a different primary port. If this is not given the default is 9993. If zero is given a random port is chosen each time.",
+                    "default": 9993,
+                    "min_value": 1,
+                    "max_value": 65535,
+                    "required": false
+                },
+                {
+                    "id": "service-working-directory",
+                    "type": "string",
+                    "label": "Service working directory",
+                    "description": "zerotier-one  service keeps its state and other files in a working directory",
+                    "min_length": 1,
+                    "placeholder": "/var/lib/zerotier-one",
+                    "required": false
+                }
+            ]
+        }
+    ]
+}
