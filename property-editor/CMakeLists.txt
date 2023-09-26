@@ -45,7 +45,7 @@ install(TARGETS ${PLUGIN_LIB_NAME}  DESTINATION ${NM_LIB_DIR})
 foreach(_GTK_VERSION ${TARGET_GTK_VERSIONS})
     set(_WIDGET_LIB_NAME "libnm-gtk${_GTK_VERSION}-vpn-plugin-${NM_VPN_PROVIDER_ID}-editor")
     message(">>> add_library() ${_WIDGET_LIB_NAME}")
-    add_library(${_WIDGET_LIB_NAME} MODULE)
+    add_library(${_WIDGET_LIB_NAME} SHARED)
     set_vpn_provider_defines(${_WIDGET_LIB_NAME})
     set_target_properties(${_WIDGET_LIB_NAME} PROPERTIES PREFIX "")
     target_sources(${_WIDGET_LIB_NAME} PRIVATE
@@ -55,7 +55,6 @@ foreach(_GTK_VERSION ${TARGET_GTK_VERSIONS})
     target_include_directories(${_WIDGET_LIB_NAME} PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${GTK${_GTK_VERSION}_INCLUDE_DIRS}
-        ${GTK3_INCLUDE_DIRS}
         ${JSON_GLIB_INCLUDE_DIRS}
         ${NETWORKMANAGER_INCLUDE_DIRS}
     )
@@ -64,6 +63,7 @@ foreach(_GTK_VERSION ${TARGET_GTK_VERSIONS})
         ${JSON_GLIB_LIBRARIES}
         ${NETWORKMANAGER_LIBRARIES}
     )
+    target_compile_definitions(${_WIDGET_LIB_NAME} PRIVATE WIDGET_LIB_WIDGET_GTK_MAJOR_VER=${_GTK_VERSION})
     if (DISABLE_DYNAMIC_WIDGET_LIB_LOADING)
         target_compile_definitions(${PLUGIN_LIB_NAME} PRIVATE DISABLE_DYNAMIC_WIDGET_LIB_LOADING=1)
         target_link_libraries(${PLUGIN_LIB_NAME} PRIVATE ${_WIDGET_LIB_NAME})

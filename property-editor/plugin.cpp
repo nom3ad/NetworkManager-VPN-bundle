@@ -11,6 +11,11 @@
 #include "nm-vpn-plugin-utils.h" // TODO: reuse one from NetworkManager
 #endif
 
+#undef G_LOG_DOMAIN
+#define G_LOG_DOMAIN ("nm-vpn-plugin-" NM_VPN_PROVIDER_ID)
+
+#define EDITOR_PLUGIN_ERROR (g_quark_from_static_string("nm-connection-error-quark"))
+
 using namespace std;
 
 enum { PROP_0, PROP_NAME, PROP_DESC, PROP_SERVICE };

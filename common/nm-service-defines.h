@@ -25,10 +25,7 @@
         },                                                                                                                                                     \
         &ss);
 
-#define EDITOR_PLUGIN_ERROR (g_quark_from_static_string("nm-connection-error-quark"))
 
-// #undef g_debug
-// #undef g_info
 // #define g_debug g_warning
 // #define g_info g_warning
 // #define DEBUG_SET_STDERR_TO_FILE

@@ -1,4 +1,3 @@
-
 #include <NetworkManager.h>
 #include <glib-object.h>
 #include <gtk/gtk.h>
@@ -12,9 +11,26 @@
 #include "common/nm-service-defines.h"
 #include "widget.h"
 
-using namespace std;
+#undef G_LOG_DOMAIN
+#define G_LOG_DOMAIN ("nm-vpn-plugin-" NM_VPN_PROVIDER_ID "-widget-gtk" G_STRINGIFY(WIDGET_LIB_WIDGET_GTK_MAJOR_VER))
 
+#define EDITOR_PLUGIN_ERROR (g_quark_from_static_string("nm-connection-error-quark"))
 #define set_invalid_property_error(error, ...) g_set_error(error, EDITOR_PLUGIN_ERROR, NM_CONNECTION_ERROR_INVALID_PROPERTY, __VA_ARGS__)
+
+#if !GTK_CHECK_VERSION(4,0,0)
+#define gtk_editable_set_text(editable,text)		gtk_entry_set_text(GTK_ENTRY(editable), (text))
+#define gtk_editable_get_text(editable)			gtk_entry_get_text(GTK_ENTRY(editable))
+#define gtk_widget_get_root(widget)			gtk_widget_get_toplevel(widget)
+#define gtk_window_destroy(window)			gtk_widget_destroy(GTK_WIDGET (window))
+#define gtk_check_button_get_active(button)		gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(button))
+#define gtk_check_button_set_active(button, active)	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), active)
+#define gtk_box_append(box, widget)	gtk_box_pack_start(box, widget, false, false, 0)
+
+typedef void GtkRoot;
+#endif 
+
+
+using namespace std;
 
 typedef struct {
     GtkWidget *widget;
