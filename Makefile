@@ -9,6 +9,8 @@ TEST_VPN_UUID=$(shell nmcli connection show $(TEST_VPN_NAME) | (grep connection.
 AUTH_CONFIG_HINT=$(AUTH_CONFIG_HINT_PREFIX)$(shell jq -cn --arg message "$(TEST_VPN_MESSAGE)" --arg qr_image "$(TEST_VPN_QR_IMAGE_B64)" '{message:$$message,qr_image:$$qr_image}' | sed 's|"|\\"|g')
 VPN_BUNDLE_INCLUDED_PROVIDERS ?= all
 VPN_BUNDLE_GTK_VERSION ?= detected
+VPN_BUNDLE_DISABLE_BUILD_GTK_PLUGIN ?= OFF
+VPN_BUNDLE_DISABLE_BUILD_PLASMA_PLUGIN ?= OFF
 
 all: configure
 	ninja -C build all
@@ -28,7 +30,11 @@ clean:
 	rm -rf build/
 
 configure:
-	mkdir -p build && cd build && cmake .. -G Ninja -DCMAKE_INSTALL_PREFIX=/usr -DVPN_BUNDLE_INCLUDED_PROVIDERS=$(VPN_BUNDLE_INCLUDED_PROVIDERS) -DVPN_BUNDLE_GTK_VERSION=$(VPN_BUNDLE_GTK_VERSION)
+	mkdir -p build && cd build && cmake .. -G Ninja -DCMAKE_INSTALL_PREFIX=/usr \
+		-DVPN_BUNDLE_INCLUDED_PROVIDERS=$(VPN_BUNDLE_INCLUDED_PROVIDERS) \
+		-DVPN_BUNDLE_GTK_VERSION=$(VPN_BUNDLE_GTK_VERSION) \
+		-DVPN_BUNDLE_DISABLE_BUILD_GTK_PLUGIN=$(VPN_BUNDLE_DISABLE_BUILD_GTK_PLUGIN) \
+		-DVPN_BUNDLE_DISABLE_BUILD_PLASMA_PLUGIN=$(VPN_BUNDLE_DISABLE_BUILD_PLASMA_PLUGIN)
 
 build-plasma:
 	ninja -C build $$(ninja -C build -t targets | grep -oE "^plasmanetworkmanagement_\w+ui" | sort | uniq)
@@ -54,7 +60,7 @@ gdb-auth-dialog:
 
 run-auth-dialog:
 	make build-auth-dialog && \
-	G_MESSAGES_DEBUG=all ./build/bin/nm-vpn-bundle-auth-dialog -s "$(TEST_VPN_SERVICE)" -n "$(TEST_VPN_NAME)" -u "$(TEST_VPN_UUID)"  -t "$(AUTH_CONFIG_HINT)" -t foo -t bar
+	G_MESSAGES_DEBUG=all ./build/auth-dialog/build/bin/nm-vpn-bundle-auth-dialog -s "$(TEST_VPN_SERVICE)" -n "$(TEST_VPN_NAME)" -u "$(TEST_VPN_UUID)"  -t "$(AUTH_CONFIG_HINT)" -t foo -t bar
 
 dev-install-watch:
 	while inotifywait --recursive --event close_write,moved_to,create common/ plugin-service/ providers/ property-editor/ plasma-nm-applet-ui/ auth-dialog/ CMakeLists.txt *.in; \

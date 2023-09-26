@@ -5,19 +5,20 @@ pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
 
 set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -Wno-missing-field-initializers")
 
-SET ( OTHER_LIBS ${GTK3_LIBRARIES} ) 
 
-add_executable(nm-vpn-bundle-auth-dialog auth-dialog.cpp)
-target_include_directories(nm-vpn-bundle-auth-dialog PRIVATE
-        ${GTK3_INCLUDE_DIRS}
+set(EXE_NAME nm-vpn-bundle-auth-dialog)
+
+message(">>> add_executable() ${EXE_NAME}")
+add_executable(${EXE_NAME} auth-dialog.cpp)
+target_include_directories(${EXE_NAME} PRIVATE
         ${JSON_GLIB_INCLUDE_DIRS}
         ${NETWORKMANAGER_INCLUDE_DIRS}
+        ${GTK3_INCLUDE_DIRS}  # TODO: port to GTk4
 )
-target_link_libraries(nm-vpn-bundle-auth-dialog PRIVATE
-    ${CMAKE_THREAD_LIBS_INIT}
+target_link_libraries(${EXE_NAME} PRIVATE
     ${JSON_GLIB_LIBRARIES}
-    ${OTHER_LIBS}
     ${NETWORKMANAGER_LIBRARIES}
+    ${GTK3_LIBRARIES}
     )
 
-install(TARGETS nm-vpn-bundle-auth-dialog  DESTINATION  ${NM_VPN_BUNDLE_GTK_BIN_DIR})
+install(TARGETS ${EXE_NAME}  DESTINATION  ${NM_VPN_BUNDLE_GTK_BIN_DIR})
