@@ -17,18 +17,19 @@
 #define EDITOR_PLUGIN_ERROR (g_quark_from_static_string("nm-connection-error-quark"))
 #define set_invalid_property_error(error, ...) g_set_error(error, EDITOR_PLUGIN_ERROR, NM_CONNECTION_ERROR_INVALID_PROPERTY, __VA_ARGS__)
 
-#if !GTK_CHECK_VERSION(4,0,0)
-#define gtk_editable_set_text(editable,text)		gtk_entry_set_text(GTK_ENTRY(editable), (text))
-#define gtk_editable_get_text(editable)			gtk_entry_get_text(GTK_ENTRY(editable))
-#define gtk_widget_get_root(widget)			gtk_widget_get_toplevel(widget)
-#define gtk_window_destroy(window)			gtk_widget_destroy(GTK_WIDGET (window))
-#define gtk_check_button_get_active(button)		gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(button))
-#define gtk_check_button_set_active(button, active)	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), active)
-#define gtk_box_append(box, widget)	gtk_box_pack_start(box, widget, false, false, 0)
+#if !GTK_CHECK_VERSION(4, 0, 0)
+#define gtk_editable_set_text(editable, text) gtk_entry_set_text(GTK_ENTRY(editable), (text))
+#define gtk_editable_get_text(editable) gtk_entry_get_text(GTK_ENTRY(editable))
+#define gtk_widget_get_root(widget) gtk_widget_get_toplevel(widget)
+#define gtk_window_destroy(window) gtk_widget_destroy(GTK_WIDGET(window))
+#define gtk_check_button_get_active(button) gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(button))
+#define gtk_check_button_set_active(button, active) gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), active)
+#define gtk_box_append(box, widget) gtk_box_pack_start(box, widget, false, false, 0)
+
+#define GTK_TYPE_PASSWORD_ENTRY GTK_TYPE_ENTRY
 
 typedef void GtkRoot;
-#endif 
-
+#endif
 
 using namespace std;
 
@@ -69,7 +70,7 @@ static bool check_validity(ThisVPNEditorWidget *self, GError **error)
         string value;
         bool is_required = json_object_get_boolean_member_with_default(input_def_obj, "required", false);
         if (G_TYPE_CHECK_INSTANCE_TYPE((widget), GTK_TYPE_SPIN_BUTTON)) {
-        } else if (G_TYPE_CHECK_INSTANCE_TYPE((widget), GTK_TYPE_ENTRY)) {
+        } else if (G_TYPE_CHECK_INSTANCE_TYPE((widget), GTK_TYPE_ENTRY) || G_TYPE_CHECK_INSTANCE_TYPE((widget), GTK_TYPE_PASSWORD_ENTRY)) {
             value = STR(gtk_editable_get_text(GTK_EDITABLE(widget)));
             if (is_required && value.empty()) {
                 set_invalid_property_error(error, "Property %s is required", id.c_str());
@@ -142,7 +143,7 @@ static bool apply_connection_proprties(ThisVPNEditorWidget *self, NMConnection *
                 int v = stoi(value);
                 g_debug("apply_connection_proprties() Set spin button: key=%s value=%d", key.c_str(), v);
                 gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget), v);
-            } else if (G_TYPE_CHECK_INSTANCE_TYPE((widget), GTK_TYPE_ENTRY)) {
+            } else if (G_TYPE_CHECK_INSTANCE_TYPE((widget), GTK_TYPE_ENTRY) || G_TYPE_CHECK_INSTANCE_TYPE((widget), GTK_TYPE_PASSWORD_ENTRY)) {
                 g_debug("apply_connection_proprties() Set text entry: key=%s value=%s", key.c_str(), value.c_str());
                 gtk_editable_set_text(GTK_EDITABLE(widget), value.c_str());
             } else if (G_TYPE_CHECK_INSTANCE_TYPE((widget), GTK_TYPE_CHECK_BUTTON)) {
@@ -295,9 +296,36 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
                     gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget_input), default_v);
                 }
             } else if (type == "string") {
-                widget_input = gtk_entry_new();
                 string default_v = STR(json_object_get_string_member_with_default(input_def_obj, "default", ""));
                 gint64 max_length = json_object_get_int_member_with_default(input_def_obj, "max_length", 128);
+                bool is_secret = json_object_get_boolean_member_with_default(input_def_obj, "is_secret", false);
+                if (is_secret) {
+#if GTK_CHECK_VERSION(4, 0, 0)
+                    widget_input = gtk_password_entry_new();
+                    gtk_password_entry_set_show_peek_icon(GTK_PASSWORD_ENTRY(widget_input), true);
+#else
+                    widget_input = gtk_entry_new();
+                    gtk_entry_set_visibility(GTK_ENTRY(widget_input), false);
+                    gtk_entry_set_icon_from_icon_name(GTK_ENTRY(widget_input), GTK_ENTRY_ICON_SECONDARY, "view-reveal-symbolic.symbolic");
+                    gtk_entry_set_icon_activatable(GTK_ENTRY(widget_input), GTK_ENTRY_ICON_SECONDARY, true);
+                    g_signal_connect(widget_input,
+                                     "icon-press",
+                                     G_CALLBACK(+[](GtkWidget *widget, gpointer user_data) -> void {
+                                         bool visible = gtk_entry_get_visibility(GTK_ENTRY(widget));
+
+                                         if (visible) {
+                                             gtk_entry_set_visibility(GTK_ENTRY(widget), false);
+                                             gtk_entry_set_icon_from_icon_name(GTK_ENTRY(widget), GTK_ENTRY_ICON_SECONDARY, "view-reveal-symbolic.symbolic");
+                                         } else {
+                                             gtk_entry_set_visibility(GTK_ENTRY(widget), true);
+                                             gtk_entry_set_icon_from_icon_name(GTK_ENTRY(widget), GTK_ENTRY_ICON_SECONDARY, "view-conceal-symbolic.symbolic");
+                                         }
+                                     }),
+                                     nullptr);
+#endif
+                } else {
+                    widget_input = gtk_entry_new();
+                }
                 g_debug("Found type=%s: id=%s  max_length=%d", type.c_str(), id.c_str(), max_length);
                 if (!default_v.empty()) {
                     gtk_editable_set_text(GTK_EDITABLE(widget_input), default_v.c_str());

@@ -10,6 +10,7 @@
                 "/usr/include/gdk-pixbuf-2.0",
                 "/usr/include/glib-2.0",
                 "/usr/include/gtk-4.0",
+                "/usr/include/graphene-1.0",
                 "/usr/include/harfbuzz",
                 "/usr/include/json-glib-1.0",
                 "/usr/include/KF5/**",
@@ -17,15 +18,15 @@
                 "/usr/include/pango-1.0",
                 "/usr/include/qt/**",
                 "/usr/lib/glib-2.0/include",
-                "/usr/include/graphene-1.0"
+                "/usr/lib/graphene-1.0/include"
             ],
             "defines": [
                 "NM_VPN_PROVIDER_ID=\"\"",
                 "NM_VPN_PROVIDER_LABEL=\"\"",
                 "NM_VPN_PROVIDER_DESCRIPTION=\"\"",
                 "NM_VPN_PROVIDER_DBUS_SERVICE=\"\"",
-                "NM_VPN_PROVIDER_INPUT_FORM_JSON=\"\""
-                "WIDGET_LIB_WIDGET_GTK_MAJOR_VER=\"\"",
+                "NM_VPN_PROVIDER_INPUT_FORM_JSON=\"\"",
+                "WIDGET_LIB_WIDGET_GTK_MAJOR_VER=\"\""
             ],
             "cStandard": "c17",
             "cppStandard": "c++17",
