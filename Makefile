@@ -7,10 +7,14 @@ TEST_VPN_NAME=test-vpn
 TEST_VPN_SERVICE=org.freedesktop.NetworkManager.test
 TEST_VPN_UUID=$(shell nmcli connection show $(TEST_VPN_NAME) | (grep connection.uuid || echo '_ missing!') | awk '{ print $$2 }')
 AUTH_CONFIG_HINT=$(AUTH_CONFIG_HINT_PREFIX)$(shell jq -cn --arg message "$(TEST_VPN_MESSAGE)" --arg qr_image "$(TEST_VPN_QR_IMAGE_B64)" '{message:$$message,qr_image:$$qr_image}' | sed 's|"|\\"|g')
-
+VPN_BUNDLE_INCLUDED_PROVIDERS ?= all
+VPN_BUNDLE_GTK_VERSION ?= detected
 
 all: configure
 	ninja -C build all
+
+cmake-gui:
+	mkdir -p build && cmake-gui -S . -B build
 
 full: all cpack makepkg
 
@@ -20,15 +24,11 @@ venv:
 venv-pip:
 	pip install -r requirements.txt
 
-# configure:
-# 	mkdir -p build && cd build && cmake .. # -DCMAKE_INSTALL_PREFIX=$(pwd)/usr
-
-
 clean:
 	rm -rf build/
 
 configure:
-	mkdir -p build && cd build && cmake .. -G Ninja -DCMAKE_INSTALL_PREFIX=/usr
+	mkdir -p build && cd build && cmake .. -G Ninja -DCMAKE_INSTALL_PREFIX=/usr -DVPN_BUNDLE_INCLUDED_PROVIDERS=$(VPN_BUNDLE_INCLUDED_PROVIDERS) -DVPN_BUNDLE_GTK_VERSION=$(VPN_BUNDLE_GTK_VERSION)
 
 build-plasma:
 	ninja -C build $$(ninja -C build -t targets | grep -oE "^plasmanetworkmanagement_\w+ui" | sort | uniq)

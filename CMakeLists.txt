@@ -12,8 +12,14 @@ set(CMAKE_C_EXTENSIONS ON)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+set(CMAKE_BINARY_DIR  build)
 set(CMAKE_COLOR_DIAGNOSTICS ON)
 
+set(VPN_BUNDLE_INCLUDED_PROVIDERS "ALL" CACHE STRING "VPN providers to be bundled. Use 'all' for including all providers. Use ';' separated list of provider IDs for including specific providers.")
+set(VPN_BUNDLE_GTK_VERSION "detected" CACHE STRING "GTK version to be used for VPN settings GUI. detected means GTK versions will be detected automatically")
+set_property(CACHE VPN_BUNDLE_GTK_VERSION PROPERTY STRINGS "detected" "GTK3" "GTK4")
+set(VPN_BUNDLE_DISABLE_BUILD_PLASMA_PLUGIN OFF CACHE BOOL "Optionally disable building Plasma NM applet plugin")
+set(VPN_BUNDLE_DISABLE_BUILD_GTK_PLUGIN OFF CACHE BOOL "Optionally disable building GTK plugin")
 add_compile_options(-Wno-deprecated)
 
 # ------- install paths ---------------------------
@@ -22,8 +28,8 @@ set(NM_VPN_SERVICE_DIR ${NM_LIB_DIR}/VPN)
 set(DBUS_CONF_DIR /usr/share/dbus-1/system.d)
 
 set(NM_VPN_BUNDLE_INSTALL_DIR ${NM_LIB_DIR}/vpn-bundle)
-set(NM_VPM_PROVIDER_PLUGIN_SERVICE_DIR ${NM_VPN_BUNDLE_INSTALL_DIR}/plugin-service)
-set(NM_VPM_BUNDLE_GTK_BIN_DIR ${NM_VPN_BUNDLE_INSTALL_DIR})
+set(NM_VPN_PROVIDER_PLUGIN_SERVICE_DIR ${NM_VPN_BUNDLE_INSTALL_DIR}/plugin-service)
+set(NM_VPN_BUNDLE_GTK_BIN_DIR ${NM_VPN_BUNDLE_INSTALL_DIR})
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(NETWORKMANAGER IMPORTED_TARGET libnm>1.4.0 REQUIRED)
@@ -53,10 +59,9 @@ function(set_vpn_provider_defines  TARGET_NAME)
 endfunction()
 
 
-
 add_compile_definitions(
-  GETTEXT_PACKAGE="NetworkManager-VPN-bundle"
-  TRANSLATION_DOMAIN="NetworkManager-VPN-bundle"
+  GETTEXT_PACKAGE="${PROJECT_NAME}"
+  TRANSLATION_DOMAIN="${PROJECT_NAME}"
 )
 
 set(PROVIDER_ID_LIST)
@@ -65,6 +70,11 @@ file(GLOB _PROVIDER_DEFINITION_FILE LIST_DIRECTORIES true "providers/*.json")
 foreach(_P_JSON_FILE ${_PROVIDER_DEFINITION_FILE})
   file(READ ${_P_JSON_FILE} _P_JSON_STRING)
   string(JSON NM_VPN_PROVIDER_ID GET ${_P_JSON_STRING} "id")
+  if( (NOT VPN_BUNDLE_INCLUDED_PROVIDERS STREQUAL "all") AND (NOT VPN_BUNDLE_INCLUDED_PROVIDERS MATCHES "${NM_VPN_PROVIDER_ID}"))
+      message("Skipping VPN provider: ${NM_VPN_PROVIDER_ID}")
+      continue()
+  endif()
+  
   list(APPEND PROVIDER_ID_LIST ${NM_VPN_PROVIDER_ID})
   string(JSON NM_VPN_PROVIDER_LABEL GET ${_P_JSON_STRING} "label")
   string(JSON NM_VPN_PROVIDER_DESCRIPTION GET ${_P_JSON_STRING} "description")
@@ -79,14 +89,18 @@ foreach(_P_JSON_FILE ${_PROVIDER_DEFINITION_FILE})
 
   message(">>> Found VPN provider: ${NM_VPN_PROVIDER_ID}")
 
-
-  add_subdirectory("property-editor" "${NM_VPN_PROVIDER_ID}/property-editor")
-  find_package(ECM QUIET)
-  if(${ECM_FOUND})
-      message(">>> ECM found. May be KDE?")
-      add_subdirectory("plasma-nm-applet-ui" "${NM_VPN_PROVIDER_ID}/plasma-nm-applet-ui")
-  else()
-      message(">>> ECM not found. May be GNOME?")
+  if(NOT VPN_BUNDLE_DISABLE_BUILD_GTK_PLUGIN) 
+    add_subdirectory("property-editor" "${NM_VPN_PROVIDER_ID}/property-editor")
+  endif()
+  
+  if(NOT VPN_BUNDLE_DISABLE_BUILD_PLASMA_PLUGIN) 
+    find_package(ECM QUIET)
+    if(${ECM_FOUND})
+        message(">>> ECM found. May be KDE?")
+        add_subdirectory("plasma-nm-applet-ui" "${NM_VPN_PROVIDER_ID}/plasma-nm-applet-ui")
+    else()
+        message(">>> ECM not found. May be GNOME?")
+    endif()
   endif()
 
   configure_file("nm-xxx-service.name.in" "nm-${NM_VPN_PROVIDER_ID}-service.name" @ONLY)
@@ -96,13 +110,13 @@ foreach(_P_JSON_FILE ${_PROVIDER_DEFINITION_FILE})
   install(FILES  "${CMAKE_CURRENT_BINARY_DIR}/nm-${NM_VPN_PROVIDER_ID}-service.conf" DESTINATION ${DBUS_CONF_DIR})
 endforeach()
 
-
-add_subdirectory("auth-dialog")
+if(NOT VPN_BUNDLE_DISABLE_BUILD_GTK_PLUGIN) 
+  add_subdirectory("auth-dialog")
+endif()
 
 # file(COPY plugin-service DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/plugin-service)
 
-
-install(DIRECTORY plugin-service/ DESTINATION ${NM_VPM_PROVIDER_PLUGIN_SERVICE_DIR}
+install(DIRECTORY plugin-service/ DESTINATION ${NM_VPN_PROVIDER_PLUGIN_SERVICE_DIR}
     #USE_SOURCE_PERMISSIONS
     PATTERN "__pycache__" EXCLUDE
     PATTERN "ref" EXCLUDE
@@ -110,10 +124,8 @@ install(DIRECTORY plugin-service/ DESTINATION ${NM_VPM_PROVIDER_PLUGIN_SERVICE_D
 )
 
 foreach(_P_ID ${PROVIDER_ID_LIST})
-  install(PROGRAMS plugin-service/provider-exec DESTINATION ${NM_VPM_PROVIDER_PLUGIN_SERVICE_DIR} RENAME nm-${_P_ID}-service)
+  install(PROGRAMS plugin-service/provider-exec DESTINATION ${NM_VPN_PROVIDER_PLUGIN_SERVICE_DIR} RENAME nm-${_P_ID}-service)
 endforeach()
-
-
 
 # ---- CPack ----
 
@@ -129,7 +141,7 @@ IF(RPM_BUILD)
   message(">>> Found rpmbuild. RPM package will be generated.")
    list(APPEND CPACK_GENERATOR "RPM")
 ENDIF()
-set(CPACK_PACKAGE_NAME "networkmanager-vpn-bundle")
+set(CPACK_PACKAGE_NAME "${PROJECT_NAME}")
 set(CPACK_PACKAGE_DESCRIPTION "Collection of many 3rdparty VPN support for NetworkManager")
 set(CPACK_DEBIAN_PACKAGE_DEPENDS "libnm0 (>= 1.1.90), libc6 (>= 2.4), libglib2.0-0 (>= 2.24.0), libgtk-3-0 (>= 3.0.0), python3-pydbus, python-netifaces")
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "nom3ad") #required

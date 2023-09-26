@@ -2,19 +2,29 @@ find_package(PkgConfig REQUIRED)
 
 pkg_check_modules(JSON_GLIB REQUIRED json-glib-1.0)
 
-pkg_check_modules(GTK3 QUIET gtk+-3.0)
-pkg_check_modules(GTK4 QUIET gtk4)
-
-if (GTK3_FOUND)
+if(VPN_BUNDLE_GTK_VERSION STREQUAL "detected")
+    pkg_check_modules(GTK3 QUIET gtk+-3.0)
+    pkg_check_modules(GTK4 QUIET gtk4)
+    if (GTK3_FOUND)
+        list(APPEND TARGET_GTK_VERSIONS 3)
+    endif()
+    if (GTK4_FOUND)
+        list(APPEND TARGET_GTK_VERSIONS 4)
+    endif()
+    if (NOT TARGET_GTK_VERSIONS)
+        message(FATAL_ERROR ">>> No GTK versions found")
+    endif()
+elseif(VPN_BUNDLE_GTK_VERSION MATCHES "3")
+    pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
     list(APPEND TARGET_GTK_VERSIONS 3)
-endif()
-if (GTK4_FOUND)
+elseif(VPN_BUNDLE_GTK_VERSION MATCHES "4")
+    pkg_check_modules(GTK4 REQUIRED gtk4)
     list(APPEND TARGET_GTK_VERSIONS 4)
+else()
+    message(FATAL_ERROR ">>> Invalid VPN_BUNDLE_GTK_VERSION: ${VPN_BUNDLE_GTK_VERSION}")
 endif()
 
-if (NOT TARGET_GTK_VERSIONS)
-    message(FATAL_ERROR ">>> No GTK versions found")
-endif()
+# message(">>> GTK versions found: ${TARGET_GTK_VERSIONS}")
 
 # editor plugin lib
 #----------------------------------------
@@ -32,7 +42,7 @@ target_sources(${PLUGIN_LIB_NAME} PRIVATE
 target_include_directories(${PLUGIN_LIB_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${NETWORKMANAGER_INCLUDE_DIRS}
-    ${CMAKE_CURRENT_SOURCE_DIR}/nm
+    ${GT3_INCLUDE_DIRS}   # TODO (port to GTk4)
 )
 target_link_libraries(${PLUGIN_LIB_NAME} PRIVATE
     ${NETWORKMANAGER_LIBRARIES}

@@ -20,4 +20,4 @@ target_link_libraries(nm-vpn-bundle-auth-dialog PRIVATE
     ${NETWORKMANAGER_LIBRARIES}
     )
 
-install(TARGETS nm-vpn-bundle-auth-dialog  DESTINATION  ${NM_VPM_BUNDLE_GTK_BIN_DIR})
+install(TARGETS nm-vpn-bundle-auth-dialog  DESTINATION  ${NM_VPN_BUNDLE_GTK_BIN_DIR})
