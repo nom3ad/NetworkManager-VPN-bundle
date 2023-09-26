@@ -58,9 +58,21 @@
             "section": "Advanced",
             "inputs": [
                 {
+                    "id": "mode",
+                    "type": "enum",
+                    "label": "Overlay mode",
+                    "description": "Layer 2 (Ethernet)  or Layer 3 (IP) overlay modes",
+                    "values": [
+                        "IP (Layer 3 / TUN)",
+                        "Ethernet (Layer 2 / TAP)"
+                    ],
+                    "default": "IP (Layer 3 / TUN)",
+                    "required": false
+                },
+                {
                     "id": "dev",
                     "type": "string",
-                    "label": "name of TUN/TAP device",
+                    "label": "Name of TUN/TAP device",
                     "description": "Specify a different primary port. If this is not given the default is 9993. If zero is given a random port is chosen each time.",
                     "placeholder": "<based on connection name>",
                     "required": false

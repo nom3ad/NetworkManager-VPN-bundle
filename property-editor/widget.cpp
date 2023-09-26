@@ -133,8 +133,38 @@ static bool apply_connection_proprties(ThisVPNEditorWidget *self, NMConnection *
                 bool v = value == "true";
                 g_debug("apply_connection_proprties() Set check button: key=%s value=%d", key.c_str(), v);
                 gtk_check_button_set_active(GTK_CHECK_BUTTON(widget), v);
-            } else {
-                g_warning("Unknown widget type for key %s", key.c_str());
+            }
+#if GTK_CHECK_VERSION(4, 0, 0)
+            else if (G_TYPE_CHECK_INSTANCE_TYPE((widget), GTK_TYPE_DROP_DOWN)) {
+                GListModel *model = gtk_drop_down_get_model(GTK_DROP_DOWN(widget));
+                for (guint i = 0; i < g_list_model_get_n_items(model); i++) {
+                    auto model_item = g_list_model_get_item(model, i);
+                    string enum_value = STR(gtk_string_object_get_string(GTK_STRING_OBJECT(model_item)));
+                    g_debug("apply_connection_proprties() Set dropdown: key=%s value=%s", key.c_str(), enum_value.c_str());
+                    if (value == enum_value) {
+                        gtk_drop_down_set_selected(GTK_DROP_DOWN(widget), i);
+                        break;
+                    }
+                }
+            }
+#else
+            else if (G_TYPE_CHECK_INSTANCE_TYPE((widget), GTK_TYPE_COMBO_BOX_TEXT)) {
+                GtkTreeModel *model = gtk_combo_box_get_model(GTK_COMBO_BOX(widget));
+                GtkTreeIter iter;
+                for (gboolean valid = gtk_tree_model_get_iter_first(model, &iter); valid; valid = gtk_tree_model_iter_next(model, &iter)) {
+                    char *enume_value_cstr;
+                    gtk_tree_model_get(model, &iter, 0, &enume_value_cstr, -1);
+                    g_debug("apply_connection_proprties() Set combobox: key=%s value=%s", key.c_str(), enume_value_cstr);
+                    if (value == enume_value_cstr) {
+                        gtk_combo_box_set_active_iter(GTK_COMBO_BOX(widget), &iter);
+                        break;
+                    }
+                }
+            }
+#endif
+
+            else {
+                g_warning("apply_connection_proprties() Unknown apply_connection_proprties type for key %s : %s", key.c_str(), G_OBJECT_TYPE_NAME(widget));
                 return;
             }
         },
@@ -422,7 +452,7 @@ static gboolean update_connection_properties(NMVpnEditor *iface, NMConnection *c
         }
 #endif
         else {
-            g_warning("Unknown widget type for key %s", id.c_str());
+            g_warning("update_connection_properties() Unknown widget type for key %s : %s", id.c_str(), G_OBJECT_TYPE_NAME(widget));
         }
         if (!value.empty()) {
             g_debug("Set key=%s value=%s", id.c_str(), value.c_str());

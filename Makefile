@@ -86,5 +86,8 @@ launch-nested-gnome:
 launch-plasmoid:
 	plasmoidviewer --applet org.kde.plasma.networkmanagement
 
+launch-gnome-control-center-network:
+	G_MESSAGES_DEBUG=all gnome-control-center network
+
 setup-kde-build-deps-pacman:
 	 sudo pacman -S networkmanager-qt networkmanager extra-cmake-modules  nm-connection-editor python-pydbus

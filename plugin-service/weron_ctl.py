@@ -40,7 +40,9 @@ class WeronControl(VPNConnectionControlBase):
 
     def _run_weron(self, connection_name, vpn_data: dict[str, str]):
         weron_bin = vpn_data.get("weron-bin", "weron").strip()  # ip or ethernet
-        mode = vpn_data.get("mode", "ip").strip()  # ip or ethernet
+        mode = "ip"
+        if "ETHERNET" in vpn_data.get("mode", "").upper():
+            mode = "ethernet"
         weron_cmd = [weron_bin, "vpn", mode]
         weron_cmd.extend(("--community", vpn_data["community"]))
         weron_cmd.extend(("--password", vpn_data["password"]))
