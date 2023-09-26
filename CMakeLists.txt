@@ -15,7 +15,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_BINARY_DIR  build)
 set(CMAKE_COLOR_DIAGNOSTICS ON)
 
-set(VPN_BUNDLE_INCLUDED_PROVIDERS "ALL" CACHE STRING "VPN providers to be bundled. Use 'all' for including all providers. Use ';' separated list of provider IDs for including specific providers.")
+set(VPN_BUNDLE_INCLUDED_PROVIDERS "all" CACHE STRING "VPN providers to be bundled. Use 'all' for including all providers. Use ';' separated list of provider IDs for including specific providers.")
 set(VPN_BUNDLE_GTK_VERSION "detected" CACHE STRING "GTK version to be used for VPN settings GUI. detected means GTK versions will be detected automatically")
 set_property(CACHE VPN_BUNDLE_GTK_VERSION PROPERTY STRINGS "detected" "GTK3" "GTK4")
 set(VPN_BUNDLE_DISABLE_BUILD_PLASMA_PLUGIN OFF CACHE BOOL "Optionally disable building Plasma NM applet plugin")
