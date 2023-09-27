@@ -30,7 +30,7 @@ class TailscaleControl(VPNConnectionControlBase):
         if _sockpath := vpn_data.get("sockpath", "").strip():
             _sockpath = _DEFAULT_SOCKPATH if _sockpath == "default" else _sockpath
         else:
-            _sockpath = f"{os.getenv('XDG_RUNTIME_DIR','/var/run/tailscale')}/tailscaled.{connection_uuid}.sock"
+            _sockpath = f"{os.getenv('XDG_RUNTIME_DIR','/var/run')}/tailscale-nm/tailscaled.{connection_uuid}.sock"
         self._sockpath = _sockpath
         if self._tailscale_sock_is_available():
             raise RuntimeError("tailscale socket is already present")

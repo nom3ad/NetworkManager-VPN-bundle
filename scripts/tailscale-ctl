@@ -1,11 +1,25 @@
 #!/usr/bin/bash
+
+# Can be symlinked to ~/bin/tailscale
+
 set -e -o pipefail
 
 if [[ $# -eq 0 ]]; then
     exec /usr/bin/tailscale
 fi
 
-socket_dir=/var/run/tailscale
+socket_dirs=()
+if [[ -d  /var/run/tailscale-nmx ]]; then
+    socket_dirs+=(/var/run/tailscale-nm)
+fi
+if [[ -d  /var/run/tailscale ]]; then
+    socket_dirs+=(/var/run/tailscale)
+fi
+
+if [[ ${#socket_dirs[@]} -eq 0 ]]; then
+    echo "No socket directories exists!" >&2
+    exit 1
+fi
 
 declare -A connections
 
@@ -18,15 +32,15 @@ while read -r f; do
         name=$(nmcli -t -g connection.id  connection show "$uuid")
         connections["$name ($uuid)"]="$f"
     fi
-done < <(find "$socket_dir" -type s)
+done < <(find "${socket_dirs[@]}" -type s)
 
 if [[ ${#connections[@]} -eq 0 ]]; then
-    echo "No connections found" >&2
+    echo "No connections found!" >&2
     exit 1
 elif [[ ${#connections[@]} -eq 1 ]]; then
     name="${!connections[*]}"
 else
-    echo "Multiple connections found: Select one" >&2
+    echo "Multiple connections found! Select one:" >&2
     select name in "${!connections[@]}"; do
         break
     done

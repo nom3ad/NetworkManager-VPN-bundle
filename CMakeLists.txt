@@ -26,6 +26,7 @@ add_compile_options(-Wno-deprecated)
 set(NM_LIB_DIR /usr/lib/NetworkManager)
 set(NM_VPN_SERVICE_DIR ${NM_LIB_DIR}/VPN)
 set(DBUS_SYSTEM_CONF_DIR /usr/share/dbus-1/system.d)
+set(SCRIPT_BIN_DIR /usr/bin)
 
 set(THIS_VPN_BUNDLE_INSTALL_DIR ${NM_LIB_DIR}/vpn-bundle)
 set(THIS_VPN_PROVIDER_PLUGIN_SERVICE_DIR ${THIS_VPN_BUNDLE_INSTALL_DIR}/plugin-service)
@@ -132,6 +133,8 @@ install(DIRECTORY plugin-service/ DESTINATION ${THIS_VPN_PROVIDER_PLUGIN_SERVICE
 foreach(_P_ID ${PROVIDER_ID_LIST})
   install(PROGRAMS plugin-service/provider-exec DESTINATION ${THIS_VPN_PROVIDER_PLUGIN_SERVICE_DIR} RENAME nm-${_P_ID}-service)
 endforeach()
+
+install(PROGRAMS scripts/tailscale-ctl DESTINATION ${SCRIPT_BIN_DIR})
 
 # ---- CPack ----
 
