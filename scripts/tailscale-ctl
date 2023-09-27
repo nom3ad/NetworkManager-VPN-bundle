@@ -4,12 +4,12 @@
 
 set -e -o pipefail
 
-if [[ $# -eq 0 ]]; then
-    exec /usr/bin/tailscale
+if [[ $# -eq 0  || " $* " =~ " --help "  || " $* " =~ " -h " || $1 =~ configure|licenses|version  ]]; then
+    exec /usr/bin/tailscale "$@"
 fi
 
 socket_dirs=()
-if [[ -d  /var/run/tailscale-nmx ]]; then
+if [[ -d  /var/run/tailscale-nm ]]; then
     socket_dirs+=(/var/run/tailscale-nm)
 fi
 if [[ -d  /var/run/tailscale ]]; then
@@ -17,7 +17,7 @@ if [[ -d  /var/run/tailscale ]]; then
 fi
 
 if [[ ${#socket_dirs[@]} -eq 0 ]]; then
-    echo "No socket directories exists!" >&2
+    echo "No connections found!" >&2
     exit 1
 fi
 
