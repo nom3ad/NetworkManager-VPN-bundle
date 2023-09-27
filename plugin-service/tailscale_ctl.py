@@ -33,8 +33,8 @@ class TailscaleControl(VPNConnectionControlBase):
         self.tailscale_cli_cmd = ["tailscale", "--socket=" + self.sock_path]
         self.tailscaled_cmd = ["tailscaled", "-socket", self.sock_path]
 
-        if self.state_base_dir:
-            self.tailscaled_cmd.extend(("-statedir", os.path.join(self.state_base_dir, connection_uuid)))
+        if self.state_home_dir:
+            self.tailscaled_cmd.extend(("-statedir", os.path.join(self.state_home_dir, connection_uuid)))
 
         if listening_port := vpn_data.get("listening-port", "").strip():
             try:

@@ -2,6 +2,7 @@
     "id": "tailscale",
     "label": "Tailscale VPN",
     "description": "Tailscale is a mesh VPN. (https://tailscale.com/)",
+    "multi-connections-support": true,
     "form": [
         {
             "section": "Basic",

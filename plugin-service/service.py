@@ -73,8 +73,8 @@ class NMVpnServiceState(enum.IntEnum):
 
 
 class VpnDBUSService(ServiceBase):
-    def __init__(self, ctl_impl: type[VPNConnectionControlBase], state_base_dir: str) -> None:
-        self.ctl = ctl_impl(self, state_base_dir)
+    def __init__(self, ctl_impl: type[VPNConnectionControlBase], state_home_dir: str) -> None:
+        self.ctl = ctl_impl(self, state_home_dir)
         self._state = NMVpnServiceState.NM_VPN_SERVICE_STATE_UNKNOWN
         self._connect_lock = None
 
@@ -331,14 +331,13 @@ def main():
     args, unknown_args = parser.parse_known_args()
 
     provider = args.provider
+    dbus_service_type = f"org.freedesktop.NetworkManager.{provider}"
 
-    dbus_bus_name = args.bus_name
-    if not dbus_bus_name:
-        dbus_bus_name = f"org.freedesktop.NetworkManager.{provider}"
+    dbus_bus_name = args.bus_name or dbus_service_type
 
-    state_base_dir = args.state_base_dir
-    if not state_base_dir:
-        state_base_dir = f"/etc/NetworkManager/{dbus_bus_name}"
+    state_home_dir = args.state_home_dir
+    if not state_home_dir:
+        state_home_dir = f"/etc/NetworkManager/{dbus_service_type}"
 
     log_level = logging.INFO
     if os.environ.get("VPN_BUNDLE_DEV_MODE", "").lower() in ("true", "1"):
@@ -370,7 +369,7 @@ def main():
 
     signal.signal(signal.SIGTERM, lambda *a: quit_loop("SIGTERM"))
     with (SystemBus if os.getuid() == 0 else SessionBus)() as bus:
-        bus.publish(dbus_bus_name, (dbus_object_path, VpnDBUSService(ctl_class, state_base_dir)))
+        bus.publish(dbus_bus_name, (dbus_object_path, VpnDBUSService(ctl_class, state_home_dir)))
         loop.run()
 
     logging.info("Adios!")

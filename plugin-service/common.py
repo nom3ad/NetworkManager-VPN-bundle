@@ -140,9 +140,9 @@ class ConnectionResult(ABC):
 
 
 class VPNConnectionControlBase(ABC):
-    def __init__(self, service: "ServiceBase", state_base_dir: str) -> None:
+    def __init__(self, service: "ServiceBase", state_home_dir: str) -> None:
         self.service = service
-        self.state_base_dir = state_base_dir
+        self.state_home_dir = state_home_dir
 
     @abstractmethod
     def start(self, *, connection_uuid: str, connection_name: str, vpn_data: dict[str, str]) -> ConnectionResult:

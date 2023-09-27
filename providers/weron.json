@@ -2,6 +2,7 @@
     "id": "weron",
     "label": "Weron Overlay Network",
     "description": "Overlay networks based on WebRTC (https://github.com/pojntfx/weron)",
+    "multi-connections-support": true,
     "form": [
         {
             "section": "Basic",
