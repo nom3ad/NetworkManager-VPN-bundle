@@ -326,7 +326,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--provider", required=True)
     parser.add_argument("--bus-name", required=False)
-    parser.add_argument("--state-base-dir", required=False)
+    parser.add_argument("--state-home-dir", required=False)
     dbus_object_path = "/org/freedesktop/NetworkManager/VPN/Plugin"
     args, unknown_args = parser.parse_known_args()
 
