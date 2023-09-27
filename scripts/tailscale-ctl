@@ -1,18 +1,32 @@
 #!/usr/bin/bash
 
-# Can be symlinked to ~/bin/tailscale
+# Could be symlinked to ~/bin/tailscale
 
-set -e -o pipefail
+set -e -o pipefail -x
 
-if [[ $# -eq 0  || " $* " =~ " --help "  || " $* " =~ " -h " || $1 =~ configure|licenses|version  ]]; then
-    exec /usr/bin/tailscale "$@"
+this_bin="$(readlink -f "$0")"
+while read -r tailscale_bin; do
+    tailscale_bin="$(readlink -f "$tailscale_bin")"
+    if [[ "$tailscale_bin" != "$this_bin" ]]; then
+        break
+    fi
+done < <(which -a tailscale)
+
+if [[ -z "$tailscale_bin" ]]; then
+    echo "tailscale binary not found!" >&2
+    exit 1
+fi
+# echo "Found tailscale binary: $tailscale_bin" >&2
+
+if [[ $# -eq 0 || " $* " =~ " --help " || " $* " =~ " -h " || $1 =~ configure|licenses|version ]]; then
+    exec "$tailscale_bin" "$@"
 fi
 
 socket_dirs=()
-if [[ -d  /var/run/tailscale-nm ]]; then
+if [[ -d /var/run/tailscale-nm ]]; then
     socket_dirs+=(/var/run/tailscale-nm)
 fi
-if [[ -d  /var/run/tailscale ]]; then
+if [[ -d /var/run/tailscale ]]; then
     socket_dirs+=(/var/run/tailscale)
 fi
 
@@ -29,7 +43,7 @@ while read -r f; do
     else
         uuid="${f#*.}"
         uuid="${uuid%.*}"
-        name=$(nmcli -t -g connection.id  connection show "$uuid")
+        name=$(nmcli -t -g connection.id connection show "$uuid")
         connections["$name ($uuid)"]="$f"
     fi
 done < <(find "${socket_dirs[@]}" -type s)
@@ -48,7 +62,7 @@ fi
 echo "Using connection: $name" >&2
 socket="${connections[$name]}"
 if [[ "$UID" -ne 0 ]]; then
-    exec sudo /usr/bin/tailscale --socket="$socket" "$@"
+    exec sudo "$tailscale_bin" --socket="$socket" "$@"
 else
-    exec /usr/bin/tailscale --socket="$socket" "$@"
+    exec "$tailscale_bin" --socket="$socket" "$@"
 fi
