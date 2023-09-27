@@ -2,7 +2,7 @@
 
 # Could be symlinked to ~/bin/tailscale
 
-set -e -o pipefail -x
+set -e -o pipefail
 
 this_bin="$(readlink -f "$0")"
 while read -r tailscale_bin; do

@@ -27,7 +27,7 @@
                     "type": "boolean",
                     "label": "Source NAT to advertised local routes",
                     "description": "Source NAT traffic to local routes advertised with --advertise-route",
-                    "default": false,
+                    "default": true,
                     "required": false
                 },
                 {
@@ -43,7 +43,7 @@
                     "type": "boolean",
                     "label": "Accept DNS from Admin",
                     "description": "Accept DNS configuration from the admin pane",
-                    "default": false,
+                    "default": true,
                     "required": false
                 },
                 {
