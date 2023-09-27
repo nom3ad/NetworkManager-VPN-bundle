@@ -1,10 +1,10 @@
 {
-    "X-NetworkManager-Services": "org.freedesktop.NetworkManager.@NM_VPN_PROVIDER_ID@",
+    "X-NetworkManager-Services": "org.freedesktop.NetworkManager.@THIS_VPN_PROVIDER_ID@",
     "KPlugin": {
-        "Id": "plasmanetworkmanagement_@NM_VPN_PROVIDER_ID@ui",
+        "Id": "plasmanetworkmanagement_@THIS_VPN_PROVIDER_ID@ui",
         "License": "MIT",
-        "Name": "@NM_VPN_PROVIDER_LABEL@",
-        "Name[es]": "@NM_VPN_PROVIDER_LABEL@",
+        "Name": "@THIS_VPN_PROVIDER_LABEL@",
+        "Name[es]": "@THIS_VPN_PROVIDER_LABEL@",
         "Version": "0.1",
         "Website": "",
         "Icon": "",
@@ -16,7 +16,7 @@
             }
         ],
         "Category": "VPNService",
-        "Description": "Manage @NM_VPN_PROVIDER_LABEL@ connection",
-        "Description[es]": "Manage @NM_VPN_PROVIDER_LABEL@ connection"
+        "Description": "Manage @THIS_VPN_PROVIDER_LABEL@ connection",
+        "Description[es]": "Manage @THIS_VPN_PROVIDER_LABEL@ connection"
     }
 }

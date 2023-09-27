@@ -44,7 +44,7 @@ find_package(KF5 ${KF5_MIN_VERSION} REQUIRED
     )
     
 
-set(LIB_NAME "plasmanetworkmanagement_${NM_VPN_PROVIDER_ID}ui")
+set(LIB_NAME "plasmanetworkmanagement_${THIS_VPN_PROVIDER_ID}ui")
 message(">>> add_library() ${LIB_NAME}")
 add_library(${LIB_NAME} MODULE)
 set_vpn_provider_defines(${LIB_NAME})

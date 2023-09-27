@@ -1,14 +1,14 @@
 [VPN Connection]
-name=@NM_VPN_PROVIDER_ID@
-service=org.freedesktop.NetworkManager.@NM_VPN_PROVIDER_ID@
-program=@NM_VPN_PROVIDER_PLUGIN_SERVICE_DIR@/nm-@NM_VPN_PROVIDER_ID@-service
-supports-multiple-connections=@NM_VPN_PROVIDER_MULTI_CONNECTIONS_SUPPORT@
+name=@THIS_VPN_PROVIDER_ID@
+service=org.freedesktop.NetworkManager.@THIS_VPN_PROVIDER_ID@
+program=@THIS_VPN_PROVIDER_PLUGIN_SERVICE_DIR@/nm-@THIS_VPN_PROVIDER_ID@-service
+supports-multiple-connections=@THIS_VPN_PROVIDER_MULTI_CONNECTIONS_SUPPORT@
 
 [libnm]
-plugin=@NM_LIB_DIR@/libnm-vpn-plugin-@NM_VPN_PROVIDER_ID@.so
+plugin=@NM_LIB_DIR@/libnm-vpn-plugin-@THIS_VPN_PROVIDER_ID@.so
 
 [GNOME]
-auth-dialog=@NM_VPN_BUNDLE_GTK_BIN_DIR@/nm-vpn-bundle-auth-dialog
+auth-dialog=@THIS_VPN_BUNDLE_GTK_BIN_DIR@/nm-vpn-bundle-auth-dialog
 supports-hints=true
 supports-external-ui-mode=true
-# properties=libnm-@NM_VPN_PROVIDER_ID@-properties
+# properties=libnm-@THIS_VPN_PROVIDER_ID@-properties

@@ -12,7 +12,7 @@
 #endif
 
 #undef G_LOG_DOMAIN
-#define G_LOG_DOMAIN ("nm-vpn-plugin-" NM_VPN_PROVIDER_ID)
+#define G_LOG_DOMAIN ("nm-vpn-plugin-" THIS_VPN_PROVIDER_ID)
 
 #define EDITOR_PLUGIN_ERROR (g_quark_from_static_string("nm-connection-error-quark"))
 
@@ -32,13 +32,13 @@ static void get_property(GObject *object, guint prop_id, GValue *value, GParamSp
     g_debug("get_property() prop_id=%d", prop_id);
     switch (prop_id) {
     case PROP_NAME:
-        g_value_set_string(value, NM_VPN_PROVIDER_LABEL);
+        g_value_set_string(value, THIS_VPN_PROVIDER_LABEL);
         break;
     case PROP_DESC:
-        g_value_set_string(value, NM_VPN_PROVIDER_DESCRIPTION);
+        g_value_set_string(value, THIS_VPN_PROVIDER_DESCRIPTION);
         break;
     case PROP_SERVICE:
-        g_value_set_string(value, NM_VPN_PROVIDER_DBUS_SERVICE);
+        g_value_set_string(value, THIS_VPN_PROVIDER_DBUS_SERVICE);
         break;
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
@@ -83,9 +83,9 @@ static void editor_plugin_interface_init(NMVpnEditorPluginInterface *iface_class
         g_module_symbol(self_module, "gtk_container_add", &gtk3_only_symbol);
         g_module_close(self_module);
         if (gtk3_only_symbol) {
-            widget_lib = ("libnm-gtk3-vpn-plugin-" NM_VPN_PROVIDER_ID "-editor.so");
+            widget_lib = ("libnm-gtk3-vpn-plugin-" THIS_VPN_PROVIDER_ID "-editor.so");
         } else {
-            widget_lib = ("libnm-gtk4-vpn-plugin-" NM_VPN_PROVIDER_ID "-editor.so");
+            widget_lib = ("libnm-gtk4-vpn-plugin-" THIS_VPN_PROVIDER_ID "-editor.so");
         }
         g_message("GTK%d detected, loading %s", gtk3_only_symbol ? 3 : 4, widget_lib);
         return nm_vpn_plugin_utils_load_editor(

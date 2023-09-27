@@ -12,7 +12,7 @@
 #include "widget.h"
 
 #undef G_LOG_DOMAIN
-#define G_LOG_DOMAIN ("nm-vpn-plugin-" NM_VPN_PROVIDER_ID "-widget-gtk" G_STRINGIFY(WIDGET_LIB_WIDGET_GTK_MAJOR_VER))
+#define G_LOG_DOMAIN ("nm-vpn-plugin-" THIS_VPN_PROVIDER_ID "-widget-gtk" G_STRINGIFY(THIS_VPN_WIDGET_GTK_MAJOR_VER))
 
 #define EDITOR_PLUGIN_ERROR (g_quark_from_static_string("nm-connection-error-quark"))
 #define set_invalid_property_error(error, ...) g_set_error(error, EDITOR_PLUGIN_ERROR, NM_CONNECTION_ERROR_INVALID_PROPERTY, __VA_ARGS__)
@@ -54,7 +54,7 @@ G_DEFINE_TYPE_WITH_CODE(ThisVPNEditorWidget,
 
 static inline void set_prefixed_widget_name(GtkWidget *widget, string s1)
 {
-    string name(NM_VPN_PROVIDER_ID);
+    string name(THIS_VPN_PROVIDER_ID);
     name += "-" + name;
     gtk_widget_set_name(widget, name.c_str());
 }
@@ -216,8 +216,8 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
 
     ////////////////////////////////////////////////////////////////////////
     JsonParser *parser = json_parser_new();
-    if (!json_parser_load_from_data(parser, NM_VPN_PROVIDER_INPUT_FORM_JSON, -1, &e)) {
-        g_set_error(error, EDITOR_PLUGIN_ERROR, 0, "Unable to parse NM_VPN_PROVIDER_INPUT_FORM_JSON JSON: %s", e->message);
+    if (!json_parser_load_from_data(parser, THIS_VPN_PROVIDER_INPUT_FORM_JSON, -1, &e)) {
+        g_set_error(error, EDITOR_PLUGIN_ERROR, 0, "Unable to parse THIS_VPN_PROVIDER_INPUT_FORM_JSON JSON: %s", e->message);
         return nullptr;
     }
     JsonArray *section_array = json_node_get_array(json_parser_get_root(parser));
@@ -230,7 +230,7 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
         JsonNode *section_node = json_array_get_element(section_array, i);
         JsonObject *section_obj = json_node_get_object(section_node);
         if (!section_obj) {
-            g_set_error(error, EDITOR_PLUGIN_ERROR, 0, "NM_VPN_PROVIDER_INPUT_FORM_JSON: Invalid section obj at index %d", i);
+            g_set_error(error, EDITOR_PLUGIN_ERROR, 0, "THIS_VPN_PROVIDER_INPUT_FORM_JSON: Invalid section obj at index %d", i);
             return nullptr;
         }
         string section_title = STR(json_object_get_string_member_with_default(section_obj, "section", "<unnamed>"));
@@ -238,7 +238,7 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
 
         JsonArray *input_def_array = json_object_get_array_member(section_obj, "inputs");
         if (!input_def_array) {
-            g_set_error(error, EDITOR_PLUGIN_ERROR, 0, "NM_VPN_PROVIDER_INPUT_FORM_JSON:  Missing inputs array obj at index %d", i);
+            g_set_error(error, EDITOR_PLUGIN_ERROR, 0, "THIS_VPN_PROVIDER_INPUT_FORM_JSON:  Missing inputs array obj at index %d", i);
             return nullptr;
         }
 
@@ -265,7 +265,7 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
                 g_set_error(error,
                             EDITOR_PLUGIN_ERROR,
                             0,
-                            "NM_VPN_PROVIDER_INPUT_FORM_JSON: Invalid input def at index [%s].%d.%d",
+                            "THIS_VPN_PROVIDER_INPUT_FORM_JSON: Invalid input def at index [%s].%d.%d",
                             section_title.c_str(),
                             i,
                             j);
@@ -279,7 +279,7 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
                 g_set_error(error,
                             EDITOR_PLUGIN_ERROR,
                             0,
-                            "NM_VPN_PROVIDER_INPUT_FORM_JSON: Missing input def id at index [%s].%d.%d",
+                            "THIS_VPN_PROVIDER_INPUT_FORM_JSON: Missing input def id at index [%s].%d.%d",
                             section_title.c_str(),
                             i,
                             j);
@@ -349,7 +349,7 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
                     g_set_error(error,
                                 EDITOR_PLUGIN_ERROR,
                                 0,
-                                "NM_VPN_PROVIDER_INPUT_FORM_JSON: Invalid enum input def at index [%s].%d.%d",
+                                "THIS_VPN_PROVIDER_INPUT_FORM_JSON: Invalid enum input def at index [%s].%d.%d",
                                 section_title.c_str(),
                                 i,
                                 j);
@@ -468,7 +468,7 @@ static gboolean update_connection_properties(NMVpnEditor *iface, NMConnection *c
         return false;
 
     s_vpn = NM_SETTING_VPN(nm_setting_vpn_new());
-    g_object_set(s_vpn, NM_SETTING_VPN_SERVICE_TYPE, NM_VPN_PROVIDER_DBUS_SERVICE, nullptr);
+    g_object_set(s_vpn, NM_SETTING_VPN_SERVICE_TYPE, THIS_VPN_PROVIDER_DBUS_SERVICE, nullptr);
 
     for (const auto &pair : priv->input_widgets) {
         string id = pair.first;

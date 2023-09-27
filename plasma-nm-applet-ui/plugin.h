@@ -1,5 +1,4 @@
-#ifndef PLASMA_NM_VPN_PLUGIN_H
-#define PLASMA_NM_VPN_PLUGIN_H
+#pragma once
 
 #include <QtCore/QVariant>
 
@@ -16,5 +15,3 @@ public:
 
     QString suggestedFileName(const NetworkManager::ConnectionSettings::Ptr &connection) const override;
 };
-
-#endif //  PLASMA_NM_VPN_PLUGIN_H

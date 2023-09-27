@@ -25,11 +25,11 @@ add_compile_options(-Wno-deprecated)
 # ------- install paths ---------------------------
 set(NM_LIB_DIR /usr/lib/NetworkManager)
 set(NM_VPN_SERVICE_DIR ${NM_LIB_DIR}/VPN)
-set(DBUS_CONF_DIR /usr/share/dbus-1/system.d)
+set(DBUS_SYSTEM_CONF_DIR /usr/share/dbus-1/system.d)
 
-set(NM_VPN_BUNDLE_INSTALL_DIR ${NM_LIB_DIR}/vpn-bundle)
-set(NM_VPN_PROVIDER_PLUGIN_SERVICE_DIR ${NM_VPN_BUNDLE_INSTALL_DIR}/plugin-service)
-set(NM_VPN_BUNDLE_GTK_BIN_DIR ${NM_VPN_BUNDLE_INSTALL_DIR})
+set(THIS_VPN_BUNDLE_INSTALL_DIR ${NM_LIB_DIR}/vpn-bundle)
+set(THIS_VPN_PROVIDER_PLUGIN_SERVICE_DIR ${THIS_VPN_BUNDLE_INSTALL_DIR}/plugin-service)
+set(THIS_VPN_BUNDLE_GTK_BIN_DIR ${THIS_VPN_BUNDLE_INSTALL_DIR})
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(NETWORKMANAGER IMPORTED_TARGET libnm>1.4.0 REQUIRED)
@@ -43,18 +43,18 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/comm
 function(set_vpn_provider_defines  TARGET_NAME)
   target_compile_definitions(${TARGET_NAME} PRIVATE
   
-  NM_VPN_PROVIDER_ID="${NM_VPN_PROVIDER_ID}"
-  NM_VPN_PROVIDER_LABEL="${NM_VPN_PROVIDER_LABEL}"
-  NM_VPN_PROVIDER_DESCRIPTION="${NM_VPN_PROVIDER_DESCRIPTION}"
-  NM_VPN_PROVIDER_DBUS_SERVICE="${NM_VPN_PROVIDER_DBUS_SERVICE}"
-  NM_VPN_PROVIDER_INPUT_FORM_JSON="${NM_VPN_PROVIDER_INPUT_FORM_JSON}"
+  THIS_VPN_PROVIDER_ID="${THIS_VPN_PROVIDER_ID}"
+  THIS_VPN_PROVIDER_LABEL="${THIS_VPN_PROVIDER_LABEL}"
+  THIS_VPN_PROVIDER_DESCRIPTION="${THIS_VPN_PROVIDER_DESCRIPTION}"
+  THIS_VPN_PROVIDER_DBUS_SERVICE="${THIS_VPN_PROVIDER_DBUS_SERVICE}"
+  THIS_VPN_PROVIDER_INPUT_FORM_JSON="${THIS_VPN_PROVIDER_INPUT_FORM_JSON}"
 
-  ThisVPNEditorPlugin=NM${NM_VPN_PROVIDER_ID}VPNEditorPlugin
-  ThisVPNEditorPluginClass=NM${NM_VPN_PROVIDER_ID}VPNEditorPluginClass
-  ThisVPNEditorPluginPrivate=NM${NM_VPN_PROVIDER_ID}VPNEditorPluginPrivate
-  ThisVPNEditorWidget=NM${NM_VPN_PROVIDER_ID}VPNEditorWidget
-  ThisVPNEditorWidgetClass=NM${NM_VPN_PROVIDER_ID}VPNEditorWidgetClass
-  ThisVPNEditorWidgetPrivate=NM${NM_VPN_PROVIDER_ID}VPNEditorWidgetPrivate
+  ThisVPNEditorPlugin=NM${THIS_VPN_PROVIDER_ID}VPNEditorPlugin
+  ThisVPNEditorPluginClass=NM${THIS_VPN_PROVIDER_ID}VPNEditorPluginClass
+  ThisVPNEditorPluginPrivate=NM${THIS_VPN_PROVIDER_ID}VPNEditorPluginPrivate
+  ThisVPNEditorWidget=NM${THIS_VPN_PROVIDER_ID}VPNEditorWidget
+  ThisVPNEditorWidgetClass=NM${THIS_VPN_PROVIDER_ID}VPNEditorWidgetClass
+  ThisVPNEditorWidgetPrivate=NM${THIS_VPN_PROVIDER_ID}VPNEditorWidgetPrivate
   )
 endfunction()
 
@@ -69,51 +69,51 @@ set(PROVIDER_ID_LIST)
 file(GLOB _PROVIDER_DEFINITION_FILE LIST_DIRECTORIES true "providers/*.json")
 foreach(_P_JSON_FILE ${_PROVIDER_DEFINITION_FILE})
   file(READ ${_P_JSON_FILE} _P_JSON_STRING)
-  string(JSON NM_VPN_PROVIDER_ID GET ${_P_JSON_STRING} "id")
-  if( (NOT VPN_BUNDLE_INCLUDED_PROVIDERS STREQUAL "all") AND (NOT VPN_BUNDLE_INCLUDED_PROVIDERS MATCHES "${NM_VPN_PROVIDER_ID}"))
-      message("Skipping VPN provider: ${NM_VPN_PROVIDER_ID}")
+  string(JSON THIS_VPN_PROVIDER_ID GET ${_P_JSON_STRING} "id")
+  if( (NOT VPN_BUNDLE_INCLUDED_PROVIDERS STREQUAL "all") AND (NOT VPN_BUNDLE_INCLUDED_PROVIDERS MATCHES "${THIS_VPN_PROVIDER_ID}"))
+      message("Skipping VPN provider: ${THIS_VPN_PROVIDER_ID}")
       continue()
   endif()
-  list(APPEND PROVIDER_ID_LIST ${NM_VPN_PROVIDER_ID})
-  string(JSON NM_VPN_PROVIDER_MULTI_CONNECTIONS_SUPPORT GET ${_P_JSON_STRING} "multi-connections-support")
-  if(NM_VPN_PROVIDER_MULTI_CONNECTIONS_SUPPORT OR (NM_VPN_PROVIDER_MULTI_CONNECTIONS_SUPPORT STREQUAL "true"))
-    set(NM_VPN_PROVIDER_MULTI_CONNECTIONS_SUPPORT "true")
+  list(APPEND PROVIDER_ID_LIST ${THIS_VPN_PROVIDER_ID})
+  string(JSON THIS_VPN_PROVIDER_MULTI_CONNECTIONS_SUPPORT GET ${_P_JSON_STRING} "multi-connections-support")
+  if(THIS_VPN_PROVIDER_MULTI_CONNECTIONS_SUPPORT OR (THIS_VPN_PROVIDER_MULTI_CONNECTIONS_SUPPORT STREQUAL "true"))
+    set(THIS_VPN_PROVIDER_MULTI_CONNECTIONS_SUPPORT "true")
   else()
-    set(NM_VPN_PROVIDER_MULTI_CONNECTIONS_SUPPORT "false")
+    set(THIS_VPN_PROVIDER_MULTI_CONNECTIONS_SUPPORT "false")
   endif()
   
-  string(JSON NM_VPN_PROVIDER_LABEL GET ${_P_JSON_STRING} "label")
-  string(JSON NM_VPN_PROVIDER_DESCRIPTION GET ${_P_JSON_STRING} "description")
-  set(NM_VPN_PROVIDER_DBUS_SERVICE "org.freedesktop.NetworkManager.${NM_VPN_PROVIDER_ID}")
-  string(JSON NM_VPN_PROVIDER_INPUT_FORM_JSON GET ${_P_JSON_STRING} "form")
-  string(REPLACE "\\" "\\\\" NM_VPN_PROVIDER_INPUT_FORM_JSON ${NM_VPN_PROVIDER_INPUT_FORM_JSON})
-  string(REPLACE "\n" "\\n" NM_VPN_PROVIDER_INPUT_FORM_JSON ${NM_VPN_PROVIDER_INPUT_FORM_JSON})
-  string(REPLACE "\t" "\\n" NM_VPN_PROVIDER_INPUT_FORM_JSON ${NM_VPN_PROVIDER_INPUT_FORM_JSON})
-  string(REPLACE "\"" "\\\"" NM_VPN_PROVIDER_INPUT_FORM_JSON ${NM_VPN_PROVIDER_INPUT_FORM_JSON})
+  string(JSON THIS_VPN_PROVIDER_LABEL GET ${_P_JSON_STRING} "label")
+  string(JSON THIS_VPN_PROVIDER_DESCRIPTION GET ${_P_JSON_STRING} "description")
+  set(THIS_VPN_PROVIDER_DBUS_SERVICE "org.freedesktop.NetworkManager.${THIS_VPN_PROVIDER_ID}")
+  string(JSON THIS_VPN_PROVIDER_INPUT_FORM_JSON GET ${_P_JSON_STRING} "form")
+  string(REPLACE "\\" "\\\\" THIS_VPN_PROVIDER_INPUT_FORM_JSON ${THIS_VPN_PROVIDER_INPUT_FORM_JSON})
+  string(REPLACE "\n" "\\n" THIS_VPN_PROVIDER_INPUT_FORM_JSON ${THIS_VPN_PROVIDER_INPUT_FORM_JSON})
+  string(REPLACE "\t" "\\n" THIS_VPN_PROVIDER_INPUT_FORM_JSON ${THIS_VPN_PROVIDER_INPUT_FORM_JSON})
+  string(REPLACE "\"" "\\\"" THIS_VPN_PROVIDER_INPUT_FORM_JSON ${THIS_VPN_PROVIDER_INPUT_FORM_JSON})
 
-  # message(">>> NM_VPN_PROVIDER_INPUT_FORM_JSON: ${NM_VPN_PROVIDER_INPUT_FORM_JSON}")
+  # message(">>> THIS_VPN_PROVIDER_INPUT_FORM_JSON: ${THIS_VPN_PROVIDER_INPUT_FORM_JSON}")
 
-  message(">>> Found VPN provider: ${NM_VPN_PROVIDER_ID}")
+  message(">>> Found VPN provider: ${THIS_VPN_PROVIDER_ID}")
 
   if(NOT VPN_BUNDLE_DISABLE_BUILD_GTK_PLUGIN) 
-    add_subdirectory("property-editor" "${NM_VPN_PROVIDER_ID}/property-editor")
+    add_subdirectory("property-editor" "${THIS_VPN_PROVIDER_ID}/property-editor")
   endif()
   
   if(NOT VPN_BUNDLE_DISABLE_BUILD_PLASMA_PLUGIN) 
     find_package(ECM QUIET)
     if(${ECM_FOUND})
         message(">>> ECM found. May be KDE?")
-        add_subdirectory("plasma-nm-applet-ui" "${NM_VPN_PROVIDER_ID}/plasma-nm-applet-ui")
+        add_subdirectory("plasma-nm-applet-ui" "${THIS_VPN_PROVIDER_ID}/plasma-nm-applet-ui")
     else()
         message(">>> ECM not found. May be GNOME?")
     endif()
   endif()
 
-  configure_file("nm-xxx-service.name.in" "nm-${NM_VPN_PROVIDER_ID}-service.name" @ONLY)
-  configure_file("nm-xxx-service.conf.in" "nm-${NM_VPN_PROVIDER_ID}-service.conf" @ONLY)
+  configure_file("nm-xxx-service.name.in" "nm-${THIS_VPN_PROVIDER_ID}-service.name" @ONLY)
+  configure_file("nm-xxx-service.conf.in" "nm-${THIS_VPN_PROVIDER_ID}-service.conf" @ONLY)
   
-  install(FILES "${CMAKE_CURRENT_BINARY_DIR}/nm-${NM_VPN_PROVIDER_ID}-service.name" DESTINATION ${NM_VPN_SERVICE_DIR})
-  install(FILES  "${CMAKE_CURRENT_BINARY_DIR}/nm-${NM_VPN_PROVIDER_ID}-service.conf" DESTINATION ${DBUS_CONF_DIR})
+  install(FILES "${CMAKE_CURRENT_BINARY_DIR}/nm-${THIS_VPN_PROVIDER_ID}-service.name" DESTINATION ${NM_VPN_SERVICE_DIR})
+  install(FILES  "${CMAKE_CURRENT_BINARY_DIR}/nm-${THIS_VPN_PROVIDER_ID}-service.conf" DESTINATION ${DBUS_SYSTEM_CONF_DIR})
 endforeach()
 
 if(NOT VPN_BUNDLE_DISABLE_BUILD_GTK_PLUGIN) 
@@ -122,7 +122,7 @@ endif()
 
 # file(COPY plugin-service DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/plugin-service)
 
-install(DIRECTORY plugin-service/ DESTINATION ${NM_VPN_PROVIDER_PLUGIN_SERVICE_DIR}
+install(DIRECTORY plugin-service/ DESTINATION ${THIS_VPN_PROVIDER_PLUGIN_SERVICE_DIR}
     #USE_SOURCE_PERMISSIONS
     PATTERN "__pycache__" EXCLUDE
     PATTERN "ref" EXCLUDE
@@ -130,7 +130,7 @@ install(DIRECTORY plugin-service/ DESTINATION ${NM_VPN_PROVIDER_PLUGIN_SERVICE_D
 )
 
 foreach(_P_ID ${PROVIDER_ID_LIST})
-  install(PROGRAMS plugin-service/provider-exec DESTINATION ${NM_VPN_PROVIDER_PLUGIN_SERVICE_DIR} RENAME nm-${_P_ID}-service)
+  install(PROGRAMS plugin-service/provider-exec DESTINATION ${THIS_VPN_PROVIDER_PLUGIN_SERVICE_DIR} RENAME nm-${_P_ID}-service)
 endforeach()
 
 # ---- CPack ----

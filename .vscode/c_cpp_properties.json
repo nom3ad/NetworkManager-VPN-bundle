@@ -21,12 +21,12 @@
                 "/usr/lib/graphene-1.0/include"
             ],
             "defines": [
-                "NM_VPN_PROVIDER_ID=\"\"",
-                "NM_VPN_PROVIDER_LABEL=\"\"",
-                "NM_VPN_PROVIDER_DESCRIPTION=\"\"",
-                "NM_VPN_PROVIDER_DBUS_SERVICE=\"\"",
-                "NM_VPN_PROVIDER_INPUT_FORM_JSON=\"\"",
-                "WIDGET_LIB_WIDGET_GTK_MAJOR_VER=\"\""
+                "THIS_VPN_PROVIDER_ID=\"\"",
+                "THIS_VPN_PROVIDER_LABEL=\"\"",
+                "THIS_VPN_PROVIDER_DESCRIPTION=\"\"",
+                "THIS_VPN_PROVIDER_DBUS_SERVICE=\"\"",
+                "THIS_VPN_PROVIDER_INPUT_FORM_JSON=\"\"",
+                "THIS_VPN_WIDGET_GTK_MAJOR_VER=\"\""
             ],
             "cStandard": "c17",
             "cppStandard": "c++17",

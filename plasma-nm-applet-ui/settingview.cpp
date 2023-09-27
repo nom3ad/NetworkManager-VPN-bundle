@@ -71,7 +71,7 @@ VPNProviderSettingView::VPNProviderSettingView(const NetworkManager::VpnSetting:
     QFormLayout *mainLayout = new QFormLayout(this);
     this->setLayout(mainLayout);
     ////////////////////////////
-    QJsonDocument inputFormJson = QJsonDocument::fromJson(QString(NM_VPN_PROVIDER_INPUT_FORM_JSON).toUtf8());
+    QJsonDocument inputFormJson = QJsonDocument::fromJson(QString(THIS_VPN_PROVIDER_INPUT_FORM_JSON).toUtf8());
 
     for (const QJsonValue sectionValue : inputFormJson.array()) {
         QString sectionTitle = sectionValue.toObject()["section"].toString();
@@ -230,7 +230,7 @@ void VPNProviderSettingView::loadSecrets(const NetworkManager::Setting::Ptr &set
 QVariantMap VPNProviderSettingView::setting() const
 {
     NetworkManager::VpnSetting setting;
-    setting.setServiceType(QLatin1String(NM_VPN_PROVIDER_DBUS_SERVICE));
+    setting.setServiceType(QLatin1String(THIS_VPN_PROVIDER_DBUS_SERVICE));
     NMStringMap data;
     NMStringMap secrets;
 

@@ -18,7 +18,7 @@ if [[ -e "$module_dir/.dev" ]]; then
 fi
 
 if [[ $VPN_BUNDLE_DEV_MODE == true ]]; then
-    # export NM_VPN_LOG_SYSLOG=1
+    # export VPN_BUNDLE_LOG_SYSLOG=1
     echo " >>>>  Running in Dev Mode | PYTHON_BIN=($PYTHON_BIN) pwd=$(pwd) module_dir=$module_dir exe=$0 args=$*" >&2
 fi
 

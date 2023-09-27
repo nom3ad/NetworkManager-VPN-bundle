@@ -1,5 +1,4 @@
-#ifndef PLASMA_NM_VPN_PLUGIN_SIMPLE_LINK_AUTH_H
-#define PLASMA_NM_VPN_PLUGIN_SIMPLE_LINK_AUTH_H
+#pragma once
 
 #include <NetworkManagerQt/VpnSetting>
 
@@ -23,5 +22,3 @@ private:
     // void _hideChildren();
     QDialog *_getCurrentDialogWidget();
 };
-
-#endif // PLASMA_NM_VPN_PLUGIN_SIMPLE_LINK_AUTH_H
