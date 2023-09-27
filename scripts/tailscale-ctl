@@ -1,0 +1,40 @@
+#!/usr/bin/bash
+set -e -o pipefail
+
+if [[ $# -eq 0 ]]; then
+    exec /usr/bin/tailscale
+fi
+
+socket_dir=/var/run/tailscale
+
+declare -A connections
+
+while read -r f; do
+    if [[ "$f" =~ /tailscaled.sock$ ]]; then
+        connections["<default>"]="$f"
+    else
+        uuid="${f#*.}"
+        uuid="${uuid%.*}"
+        name=$(nmcli -t -g connection.id  connection show "$uuid")
+        connections["$name ($uuid)"]="$f"
+    fi
+done < <(find "$socket_dir" -type s)
+
+if [[ ${#connections[@]} -eq 0 ]]; then
+    echo "No connections found" >&2
+    exit 1
+elif [[ ${#connections[@]} -eq 1 ]]; then
+    name="${!connections[*]}"
+else
+    echo "Multiple connections found: Select one" >&2
+    select name in "${!connections[@]}"; do
+        break
+    done
+fi
+echo "Using connection: $name" >&2
+socket="${connections[$name]}"
+if [[ "$UID" -ne 0 ]]; then
+    exec sudo /usr/bin/tailscale --socket="$socket" "$@"
+else
+    exec /usr/bin/tailscale --socket="$socket" "$@"
+fi

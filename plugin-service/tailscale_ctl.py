@@ -27,11 +27,17 @@ class TailscaleControl(VPNConnectionControlBase):
 
     def start(self, *, connection_uuid: str, connection_name: str, vpn_data: dict[str, str]):
         self._assert_processes_not_running()
+        if _sockpath := vpn_data.get("sockpath", "").strip():
+            _sockpath = _DEFAULT_SOCKPATH if _sockpath == "default" else _sockpath
+        else:
+            _sockpath = f"{os.getenv('XDG_RUNTIME_DIR','/var/run/tailscale')}/tailscaled.{connection_uuid}.sock"
+        self._sockpath = _sockpath
         if self._tailscale_sock_is_available():
             raise RuntimeError("tailscale socket is already present")
-        self.sock_path = vpn_data.get("sockpath", "").strip() or _DEFAULT_SOCKPATH
-        self.tailscale_cli_cmd = ["tailscale", "--socket=" + self.sock_path]
-        self.tailscaled_cmd = ["tailscaled", "-socket", self.sock_path]
+        os.makedirs(os.path.dirname(_sockpath), exist_ok=True)
+
+        self.tailscale_cli_cmd = ["tailscale", "--socket=" + self._sockpath]
+        self.tailscaled_cmd = ["tailscaled", "-socket", self._sockpath]
 
         if self.state_home_dir:
             self.tailscaled_cmd.extend(("-statedir", os.path.join(self.state_home_dir, connection_uuid)))
@@ -161,7 +167,7 @@ class TailscaleControl(VPNConnectionControlBase):
 
     def _tailscale_sock_is_available(self):
         try:
-            return stat.S_ISSOCK(os.stat(_DEFAULT_SOCKPATH).st_mode)
+            return stat.S_ISSOCK(os.stat(self._sockpath).st_mode)
         except FileNotFoundError:
             return False
 
