@@ -71,8 +71,9 @@ dev-install-watch:
 install: 
 	 ninja -C build install
 
-cpack: 
-	ninja -C build package
+package-all: 
+	ninja -C build package;
+	make makepkg
 
 makepkg: 
 	if command -v makepkg >/dev/null; then PKGDEST=build/packages/ makepkg --noextract -f && rmdir src; else echo "Arch package not built!"; fi

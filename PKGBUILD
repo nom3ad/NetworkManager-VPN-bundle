@@ -9,7 +9,6 @@ url="https://github.com/nom3ad/NetworkManager-vpn-bundle"
 license=('MIT')
 depends=('networkmanager'
     'libnm'
-    'nm-connection-editor'
     # 'python-dbus'  # provided by dbus-python
     'python-pydbus'
     'python-netifaces'
