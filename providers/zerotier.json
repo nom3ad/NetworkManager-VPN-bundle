@@ -3,7 +3,7 @@
     "label": "ZeroTier VPN",
     "description": "ZeroTier is a p2p VPN. (https://www.zerotier.com/)",
     "multi-connections-support": true,
-    "form": [
+    "editor": [
         {
             "section": "Basic",
             "inputs": [

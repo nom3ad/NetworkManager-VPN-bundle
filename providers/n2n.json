@@ -3,7 +3,7 @@
     "label": "N2n Peer-to-peer VPN",
     "description": "Peer-to-peer VPN  (https://github.com/ntop/n2n)",
     "multi-connections-support": true,
-    "form": [
+    "editor": [
         {
             "section": "Basic",
             "inputs": [
