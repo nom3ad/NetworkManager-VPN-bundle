@@ -287,12 +287,9 @@ AnyIPAddr = ipaddress.IPv4Address | ipaddress.IPv6Address | ipaddress.IPv4Interf
 
 
 def to_prefix_len(s: str) -> int:
-    if "/" in s:
+    if "/" in s:  # ffff:ffff:ffff:ffff::/64
         return int(s.split("/")[1])
-    try:
-        return math.floor(math.log2(2**32 - int(ipaddress.ip_address(s))))  # s = 255.x.y.z
-    except ValueError:
-        return 32
+    return bin(int(ipaddress.IPv4Address(s))).count("1")  # s = 255.x.y.z
 
 
 def get_iface_addresses(iface: str, ipv4=True, ipv6=True) -> list[ipaddress.IPv4Interface | ipaddress.IPv6Interface]:

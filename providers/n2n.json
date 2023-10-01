@@ -1,0 +1,91 @@
+{
+    "id": "n2n",
+    "label": "N2n Peer-to-peer VPN",
+    "description": "Peer-to-peer VPN  (https://github.com/ntop/n2n)",
+    "multi-connections-support": true,
+    "form": [
+        {
+            "section": "Basic",
+            "inputs": [
+                {
+                    "id": "community",
+                    "type": "string",
+                    "label": "Community ID",
+                    "max_length": 16,
+                    "description": "ID of community to join",
+                    "required": true
+                },
+                {
+                    "id": "password",
+                    "type": "string",
+                    "is_secret": true,
+                    "label": "Community password",
+                    "description": "Password for community",
+                    "required": false
+                },
+                {
+                    "id": "encryption-key",
+                    "type": "string",
+                    "is_secret": true,
+                    "label": "Community encryption key",
+                    "description": "Encryption key for community",
+                    "required": true
+                },
+                {
+                    "id": "static-ip",
+                    "type": "string",
+                    "label": "SataticIP Adresse",
+                    "description": "Edge draws IP address from supernode if none provided",
+                    "required": false
+                },
+                {
+                    "id": "supernodes",
+                    "type": "string",
+                    "label": "Signaler address",
+                    "description": "https://github.com/ntop/n2n",
+                    "placeholder": "host:port",
+                    "required": true
+                }
+            ]
+        },
+        {
+            "section": "Advanced",
+            "inputs": [
+                {
+                    "id": "dev",
+                    "type": "string",
+                    "label": "TAP device name",
+                    "description": "Name of TAP device",
+                    "placeholder": "<based on connection name>",
+                    "required": false
+                },
+                {
+                    "id": "force-relay-via-supernode",
+                    "type": "boolean",
+                    "label": "Always Relay via supernode",
+                    "description": "do not connect p2p, always use the supernode",
+                    "default": false,
+                    "required": false
+                },
+                {
+                    "id": "verbose",
+                    "type": "integer",
+                    "label": "Log verbosity",
+                    "description": "Verbosity level (0 is disabled, default is info, 7 is trace) (default 5)",
+                    "default": 0,
+                    "min_value": 0,
+                    "max_value": 3,
+                    "required": false
+                },
+                {
+                    "id": "edge-bin",
+                    "type": "string",
+                    "label": "n2n edge binary path",
+                    "description": "path to n2n edge binary",
+                    "placeholder": "edge",
+                    "required": false
+                }
+            ]
+        }
+    ]
+}
