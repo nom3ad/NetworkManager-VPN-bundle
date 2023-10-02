@@ -7,6 +7,7 @@ from .utils import (
     Subprocess,
     find_valid_if_name,
     get_iface_addresses,
+    getter,
     is_interface_ready,
     timeout,
 )
@@ -39,26 +40,27 @@ class N2NControl(VPNConnectionControlBase):
             self._proc_n2n_edge.graceful_kill()
 
     def _run_n2n_edge(self, connection_name, vpn_data: dict[str, str]):
-        edge_bin = vpn_data.get("edge-bin", "edge").strip()  # ip or ethernet
+        vpn_data_get = getter(vpn_data)
+        edge_bin = vpn_data_get("edge-bin", "edge")  # ip or ethernet
         edge_cmd = [edge_bin, "-f"]  # -f: foreground
         edge_cmd.extend(("-c", vpn_data["community"]))
         edge_cmd.extend(("-k", vpn_data["encryption-key"]))
-        if password := vpn_data.get("password", "").strip():
+        if password := vpn_data_get("password"):
             edge_cmd.extend(("-J", password))
-        dev = vpn_data.get("dev", "").strip() or find_valid_if_name(connection_name)
+        dev = vpn_data_get("dev") or find_valid_if_name(connection_name)
         edge_cmd.extend(("-d", dev))
-        if snodes := vpn_data.get("supernodes", "").strip().split(","):
+        if snodes := vpn_data_get("supernodes", "").split(","):
             for l in snodes:
                 edge_cmd.extend(("-l", l))
-        if static_ip := vpn_data.get("static-ip", "").strip():
+        if static_ip := vpn_data_get("static-ip"):
             edge_cmd.extend(("-a", static_ip))
-        if vpn_data.get("force-relay-via-supernode", "").strip() == "true":
+        if vpn_data_get("force-relay-via-supernode") == "true":
             edge_cmd.append("-S1")
-        for _ in range(0, int(vpn_data.get("verbose", "0").strip())):
+        for _ in range(0, int(vpn_data_get("verbose", "0"))):
             edge_cmd.append("-v")
 
         stderr = sys.stderr
-        if log_file := vpn_data.get("log-file", ""):
+        if log_file := vpn_data_get("log-file"):
             stderr = open(log_file, "wb+")
         logging.info("Run n2n edge %r", edge_cmd)
         self._proc_n2n_edge = Subprocess(edge_cmd, name="n2n-edge", stderr=stderr)

@@ -322,3 +322,10 @@ def get_network_interfaces_by_ip(ip: AnyIPAddr | str) -> list[str]:
             ):
                 interfaces_with_ip.append(iface)
     return interfaces_with_ip
+
+
+def getter(d: dict):
+    def _fn(k: str, default=None):
+        return d.get(k, "").strip() or default
+
+    return _fn

@@ -7,6 +7,7 @@ from .utils import (
     Subprocess,
     find_valid_if_name,
     get_iface_addresses,
+    getter,
     is_interface_ready,
     timeout,
 )
@@ -39,31 +40,32 @@ class WeronControl(VPNConnectionControlBase):
             self._proc_weron.graceful_kill()
 
     def _run_weron(self, connection_name, vpn_data: dict[str, str]):
-        weron_bin = vpn_data.get("weron-bin", "weron").strip()  # ip or ethernet
+        vpn_data_get = getter(vpn_data)
+        weron_bin = vpn_data_get("weron-bin", "weron")  # ip or ethernet
         mode = "ip"
-        if "ETHERNET" in vpn_data.get("mode", "").upper():
+        if "ETHERNET" in vpn_data_get("mode", "").upper():
             mode = "ethernet"
         weron_cmd = [weron_bin, "vpn", mode]
         weron_cmd.extend(("--community", vpn_data["community"]))
         weron_cmd.extend(("--password", vpn_data["password"]))
         weron_cmd.extend(("--key", vpn_data["key"]))
-        dev = vpn_data.get("dev", "").strip() or find_valid_if_name(connection_name)
+        dev = vpn_data_get("dev") or find_valid_if_name(connection_name)
         weron_cmd.extend(("--dev", dev))
         if mode == "ip":
             weron_cmd.extend(("--ips", vpn_data["ips"]))
-            if vpn_data.get("static", "").strip() == "true":
+            if vpn_data_get("static") == "true":
                 weron_cmd.extend(("--static",))
-        if raddr := vpn_data.get("raddr", "").strip():
+        if raddr := vpn_data_get("raddr"):
             weron_cmd.extend(("--raddr", raddr))
-        if vpn_data.get("force-relay", "").strip() == "true":
+        if vpn_data_get("force-relay") == "true":
             weron_cmd.extend(("--force-relay",))
-        if ice := vpn_data.get("ice", "").strip():
+        if ice := vpn_data_get("ice"):
             weron_cmd.extend(("--ice", ice))
-        if verbose := vpn_data.get("verbose", "").strip():
+        if verbose := vpn_data_get("verbose"):
             weron_cmd.extend(("--verbose", verbose))
 
         stderr = sys.stderr
-        if log_file := vpn_data.get("log-file", ""):
+        if log_file := vpn_data_get("log-file"):
             stderr = open(log_file, "wb+")
         logging.info("Run weron: %r", weron_cmd)
         self._proc_weron = Subprocess(weron_cmd, name="weron", stderr=stderr)

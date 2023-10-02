@@ -5,7 +5,7 @@ import logging
 from .common import ConnectionResult, VPNConnectionControlBase
 from .utils import (
     Subprocess,
-    get_network_interfaces_by_ip,
+    getter,
     http_rquest,
     ip_interface_addresses_by_family,
     timeout,
@@ -18,12 +18,13 @@ class ZeroTierControl(VPNConnectionControlBase):
     _cli_invoke_timeout_sec = 30
 
     def start(self, *, connection_uuid: str, connection_name: str, vpn_data: dict[str, str]):
-        self.network_id = vpn_data.get("network-id", "").strip()
+        vpn_data_get = getter(vpn_data)
+        self.network_id = vpn_data_get("network-id")
         if not self.network_id:
             raise RuntimeError("network-id is not specified")
-        self.api_token = vpn_data.get("api-token", "").strip()
-        self.primray_port = int(vpn_data.get("primary-port", "").strip() or 9993)
-        self.service_work_dir = vpn_data.get("service-working-directory", "").strip() or "/var/lib/zerotier-one"
+        self.api_token = vpn_data_get("api-token")
+        self.primray_port = int(vpn_data_get("primary-port") or 9993)
+        self.service_work_dir = vpn_data_get("service-working-directory") or "/var/lib/zerotier-one"
         self._zerotier_service_cmd = ["zerotier-one"]
         self._zerotier_cli_cmd = ["zerotier-one", "-q", f"-D{self.service_work_dir}", f"-p{self.primray_port}"]
 
