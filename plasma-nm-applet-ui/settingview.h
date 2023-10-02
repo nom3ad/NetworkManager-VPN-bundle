@@ -7,6 +7,7 @@
 #include <QtWidgets/QWidget>
 
 #include "common/plasma/settingwidget.h"
+#include "shared.h"
 
 class VPNProviderSettingView : public SettingWidget
 {

@@ -5,6 +5,8 @@
 #include "authprompt.h"
 #include "settingview.h"
 
+Q_LOGGING_CATEGORY(vpnBundle, "vpnBundle")
+
 K_PLUGIN_CLASS_WITH_JSON(VPNProviderUiPlugin, "metadata.json")
 
 VPNProviderUiPlugin::VPNProviderUiPlugin(QObject *parent, const QVariantList &)
@@ -21,7 +23,7 @@ SettingWidget *VPNProviderUiPlugin::widget(const NetworkManager::VpnSetting::Ptr
 
 SettingWidget *VPNProviderUiPlugin::askUser(const NetworkManager::VpnSetting::Ptr &setting, const QStringList &hints, QWidget *parent)
 {
-    qInfo(">>> VPNProviderUiPlugin::askUser() : new AuthPromptDialog()");
+    qCInfo(vpnBundle, ">>> VPNProviderUiPlugin::askUser() : new AuthPromptDialog()");
     return new AuthPromptDialog(setting, hints, parent);
 }
 

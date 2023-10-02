@@ -3,7 +3,7 @@
 #include <NetworkManagerQt/VpnSetting>
 
 #include "common/plasma/settingwidget.h"
-
+#include "shared.h"
 
 class AuthPromptDialog : public SettingWidget
 {

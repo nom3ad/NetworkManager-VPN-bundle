@@ -47,7 +47,10 @@ QDialog *AuthPromptDialog::_getCurrentDialogWidget()
     // Find top-level widget as this should be the QDialog itself
     QWidget *widget = parentWidget();
     while (widget->parentWidget() != nullptr) {
-        qDebug("widget->parentWidget: %s -> %s", widget->objectName().toStdString().c_str(), widget->parentWidget()->objectName().toStdString().c_str());
+        qCDebug(vpnBundle,
+                "widget->parentWidget: %s -> %s",
+                widget->objectName().toStdString().c_str(),
+                widget->parentWidget()->objectName().toStdString().c_str());
         widget = widget->parentWidget();
     }
     return qobject_cast<QDialog *>(widget);
@@ -105,14 +108,14 @@ void AuthPromptDialog::_patchDialog()
         }
     }
     if (authCfgJsonStr.isEmpty()) {
-        qCritical("No auth config hint provided");
+        qCCritical(vpnBundle, "No auth config hint provided");
         return;
     }
     // json parse
     QJsonDocument authCfgDoc = QJsonDocument::fromJson(authCfgJsonStr.toUtf8());
     QString message = authCfgDoc.object().value("message").toString();
     if (message.isEmpty()) {
-        qCritical("Could not find 'message' key in auth config hint");
+        qCCritical(vpnBundle, "Could not find 'message' key in auth config hint");
         return;
     }
     lblPrompt->setText(message);

@@ -3,6 +3,7 @@
 #include <QtCore/QVariant>
 
 #include "common/plasma/vpnuiplugin.h"
+#include "shared.h"
 
 class Q_DECL_EXPORT VPNProviderUiPlugin : public VpnUiPlugin
 {
