@@ -349,7 +349,7 @@ def main():
     with suppress(Exception):
         set_proc_name(f"NM:{provider}")
     log_format = f"{provider}(%(filename)s) %(levelname)s: %(message)s"
-    if os.environ.get("VPN_BUNDLE_LOG_SYSLOG") == "1":
+    if os.environ.get("NM_VPN_LOG_SYSLOG") == "1":
         from logging.handlers import SysLogHandler
 
         log_handler = SysLogHandler(address="/dev/log")

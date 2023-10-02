@@ -70,6 +70,8 @@ class WeronControl(VPNConnectionControlBase):
 
         with timeout(self._ready_timeout_sec, description=f"Wait for interface: {dev}") as t:
             while not is_interface_ready(dev):
+                if not self._proc_weron.is_running:
+                    raise RuntimeError("weron cmd exited prematurely")
                 t.sleep(self._ready_check_interval_sec)
 
         return dev

@@ -1,0 +1,94 @@
+{
+    "id": "nebula",
+    "label": "Nebula Overlay Network",
+    "description": "Overlay networking (https://github.com/slackhq/nebula)",
+    "multi-connections-support": true,
+    "editor": [
+        {
+            "section": "Basic",
+            "inputs": [
+                {
+                    "id": "pki-ca",
+                    "type": "string",   
+                    "label": "PKI CA",
+                    "description": "The CAs that are accepted by this node. Must contain one or more certificates created by 'nebula-cert ca'",
+                    "required": true
+                },
+                {
+                    "id": "pki-cert",
+                    "type": "string",
+                    "label": "PKI Certificate",
+                    "description": "The certificate for this node. Must be signed by one of the CAs in pki-ca",
+                    "required": true
+                },
+                {
+                    "id": "pki-key",
+                    "type": "string",
+                    "label": "PKI Key",
+                    "description": "The private key for this node. Must be signed by one of the CAs in pki-ca",
+                    "required": true
+                },
+                {
+                    "id": "lighthouse-overlay-ip",
+                    "type": "string",
+                    "label": "Lighthouse Overlay IP",
+                    "description": "The IP address of the lighthouse node in the overlay network"
+                },
+                {
+                    "id": "lighthouse-host-port",
+                    "type": "string",
+                    "label": "Lighthouse Host:Port",
+                    "description": "The static host:port of the lighthouse node"
+                }
+            ]
+        },
+        {
+            "section": "Advanced",
+            "inputs": [
+                {
+                    "id": "tun-dev",
+                    "type": "string",
+                    "label": "TUN/TAP device name",
+                    "description": "Name of TUN/TAP device",
+                    "placeholder": "<based on connection name>",
+                    "required": false
+                },
+                {
+                    "id": "listen-port",
+                    "type": "integer",
+                    "label": "Listening Port",
+                    "description": "Port Nebula will be listening on. Using port 0 will dynamically assign a port",
+                    "default": 0,
+                    "min_value": 0,
+                    "max_value": 65535,
+                    "required": false
+                },
+                {
+                    "id": "realy-use_relays",
+                    "type": "boolean",
+                    "label": "Allow relays",
+                    "description": "Set use_relays to false to prevent this instance from attempting to establish connections through relays",
+                    "default": true,
+                    "required": false
+                },
+                {
+                    "id": "loging-level",
+                    "type": "enum",
+                    "label": "Logging Level",
+                    "description": "Configure logging level",
+                    "values": ["debug", "info", "warning", "error"],
+                    "default": "info",
+                    "required": false
+                },
+                {
+                    "id": "nebula-bin",
+                    "type": "string",
+                    "label": "nebula binary path",
+                    "description": "path to nebula binary",
+                    "placeholder": "nebula",
+                    "required": false
+                }
+            ]
+        }
+    ]
+}
