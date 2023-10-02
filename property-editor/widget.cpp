@@ -18,6 +18,7 @@
 #define set_invalid_property_error(error, ...) g_set_error(error, EDITOR_PLUGIN_ERROR, NM_CONNECTION_ERROR_INVALID_PROPERTY, __VA_ARGS__)
 
 #if !GTK_CHECK_VERSION(4, 0, 0)
+typedef void GtkRoot;
 #define gtk_editable_set_text(editable, text) gtk_entry_set_text(GTK_ENTRY(editable), (text))
 #define gtk_editable_get_text(editable) gtk_entry_get_text(GTK_ENTRY(editable))
 #define gtk_widget_get_root(widget) gtk_widget_get_toplevel(widget)
@@ -25,10 +26,63 @@
 #define gtk_check_button_get_active(button) gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(button))
 #define gtk_check_button_set_active(button, active) gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), active)
 #define gtk_box_append(box, widget) gtk_box_pack_start(box, widget, false, false, 0)
-
 #define GTK_TYPE_PASSWORD_ENTRY GTK_TYPE_ENTRY
+#define gtk_button_new_from_icon_name_(name) gtk_button_new_from_icon_name(name, GTK_ICON_SIZE_BUTTON)
+#define IS_LIST_VIEW_WIDGET(widget) G_TYPE_CHECK_INSTANCE_TYPE((widget), GTK_TYPE_TREE_VIEW)
+#define apply_vector_to_list_model(widget, vec)                                                                                                                \
+    {                                                                                                                                                          \
+        GtkListStore *string_list = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(widget)));                                                            \
+        for (const string v : vec) {                                                                                                                           \
+            GtkTreeIter iter;                                                                                                                                  \
+            gtk_list_store_append(string_list, &iter);                                                                                                         \
+            gtk_list_store_set(string_list, &iter, 0, v.c_str(), -1);                                                                                          \
+        }                                                                                                                                                      \
+    }
+#define remove_selected_from_list_view(listview)                                                                                                               \
+    {                                                                                                                                                          \
+        GtkTreeView *listview = GTK_TREE_VIEW(data);                                                                                                           \
+        GtkTreeModel *model = gtk_tree_view_get_model(listview);                                                                                               \
+        GtkTreeIter iter;                                                                                                                                      \
+        GtkTreeSelection *selection = gtk_tree_view_get_selection(listview);                                                                                   \
+        if (selection && gtk_tree_selection_get_selected(selection, &model, &iter)) {                                                                          \
+            gtk_list_store_remove(GTK_LIST_STORE(model), &iter);                                                                                               \
+        }                                                                                                                                                      \
+    }
+#define append_to_ist_view(listview, item)                                                                                                                     \
+    {                                                                                                                                                          \
+        GtkListStore *string_list = GTK_LIST_STORE(listview);                                                                                                  \
+        GtkTreeIter iter;                                                                                                                                      \
+        gtk_list_store_append(string_list, &iter);                                                                                                             \
+        gtk_list_store_set(string_list, &iter, 0, "<edit>", -1);                                                                                               \
+    }
+#else
 
-typedef void GtkRoot;
+#define gtk_button_new_from_icon_name_(name) gtk_button_new_from_icon_name(name)
+#define IS_LIST_VIEW_WIDGET(widget) G_TYPE_CHECK_INSTANCE_TYPE((widget), GTK_TYPE_LIST_VIEW)
+#define apply_vector_to_list_model(widget, vec)                                                                                                                \
+    {                                                                                                                                                          \
+        GtkSelectionModel *ss = gtk_list_view_get_model(GTK_LIST_VIEW(widget));                                                                                \
+        GtkStringList *string_list = GTK_STRING_LIST(gtk_single_selection_get_model(GTK_SINGLE_SELECTION(ss)));                                                \
+        for (const string v : values)                                                                                                                          \
+            gtk_string_list_append(string_list, v.c_str());                                                                                                    \
+    }
+
+#define remove_selected_from_list_view(listview)                                                                                                               \
+    {                                                                                                                                                          \
+        GtkSelectionModel *ss = gtk_list_view_get_model(GTK_LIST_VIEW(listview));                                                                              \
+        GtkStringList *string_list = GTK_STRING_LIST(gtk_single_selection_get_model(GTK_SINGLE_SELECTION(ss)));                                                \
+        GtkSingleSelection *selection = gtk_single_selection_new(G_LIST_MODEL(string_list));                                                                   \
+        guint selected = gtk_single_selection_get_selected(selection);                                                                                         \
+        if (selected != GTK_INVALID_LIST_POSITION) {                                                                                                           \
+            gtk_string_list_remove(string_list, selected);                                                                                                     \
+        }                                                                                                                                                      \
+    }
+#define append_to_ist_view(listview, item)                                                                                                                     \
+    {                                                                                                                                                          \
+        GtkSelectionModel *ss = gtk_list_view_get_model(GTK_LIST_VIEW(listview));                                                                              \
+        GtkStringList *string_list = GTK_STRING_LIST(gtk_single_selection_get_model(GTK_SINGLE_SELECTION(ss)));                                                \
+        gtk_string_list_append(string_list, item);                                                                                                             \
+    }
 #endif
 
 using namespace std;
@@ -129,6 +183,7 @@ static bool apply_connection_proprties(ThisVPNEditorWidget *self, NMConnection *
     nm_setting_vpn_foreach_data_item(
         s_vpn,
         [](const char *key_cstr, const char *value_cstr, gpointer user_data) {
+            GError *e = nullptr;
             string value = STR(value_cstr);
             string key = STR(key_cstr);
             ThisVPNEditorWidget *self = (ThisVPNEditorWidget *)user_data;
@@ -139,25 +194,42 @@ static bool apply_connection_proprties(ThisVPNEditorWidget *self, NMConnection *
             }
             InputItem inp = priv->input_widgets.at(key);
             GtkWidget *widget = inp.widget;
+            g_debug("apply_connection_proprties() widget type %s for key=%s value=%s", G_OBJECT_TYPE_NAME(widget), key.c_str(), value.c_str());
             if (G_TYPE_CHECK_INSTANCE_TYPE((widget), GTK_TYPE_SPIN_BUTTON)) {
                 int v = stoi(value);
-                g_debug("apply_connection_proprties() Set spin button: key=%s value=%d", key.c_str(), v);
                 gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget), v);
             } else if (G_TYPE_CHECK_INSTANCE_TYPE((widget), GTK_TYPE_ENTRY) || G_TYPE_CHECK_INSTANCE_TYPE((widget), GTK_TYPE_PASSWORD_ENTRY)) {
-                g_debug("apply_connection_proprties() Set text entry: key=%s value=%s", key.c_str(), value.c_str());
                 gtk_editable_set_text(GTK_EDITABLE(widget), value.c_str());
+            } else if (IS_LIST_VIEW_WIDGET(widget)) {
+                JsonParser *parser = json_parser_new();
+                if (!json_parser_load_from_data(parser, value.c_str(), -1, &e)) {
+                    g_warning("apply_connection_proprties() Unable to parse JSON: %s | %s", value.c_str(), e->message);
+                    return;
+                }
+                JsonArray *arr = json_node_get_array(json_parser_get_root(parser));
+                if (!arr) {
+                    g_warning("apply_connection_proprties() Expected array object: %s", value.c_str());
+                    return;
+                }
+                vector<string> values;
+                for (int k = 0; k < json_array_get_length(arr); k++) {
+                    JsonNode *n = json_array_get_element(arr, k);
+                    string v = STR(json_node_get_string(n));
+                    g_debug("apply_connection_proprties() Insert listview of key=%s with entry=%s", key.c_str(), v.c_str());
+                    values.push_back(v);
+                }
+                apply_vector_to_list_model(widget, values);
             } else if (G_TYPE_CHECK_INSTANCE_TYPE((widget), GTK_TYPE_CHECK_BUTTON)) {
                 bool v = value == "true";
-                g_debug("apply_connection_proprties() Set check button: key=%s value=%d", key.c_str(), v);
                 gtk_check_button_set_active(GTK_CHECK_BUTTON(widget), v);
             }
 #if GTK_CHECK_VERSION(4, 0, 0)
             else if (G_TYPE_CHECK_INSTANCE_TYPE((widget), GTK_TYPE_DROP_DOWN)) {
                 GListModel *model = gtk_drop_down_get_model(GTK_DROP_DOWN(widget));
-                for (guint i = 0; i < g_list_model_get_n_items(model); i++) {
+                for (int i = 0; i < g_list_model_get_n_items(model); i++) {
                     auto model_item = g_list_model_get_item(model, i);
                     string enum_value = STR(gtk_string_object_get_string(GTK_STRING_OBJECT(model_item)));
-                    g_debug("apply_connection_proprties() Set dropdown: key=%s value=%s", key.c_str(), enum_value.c_str());
+                    g_debug("apply_connection_proprties() Insert dropdown of key=%s with entry=%s", key.c_str(), enum_value.c_str());
                     if (value == enum_value) {
                         gtk_drop_down_set_selected(GTK_DROP_DOWN(widget), i);
                         break;
@@ -181,7 +253,7 @@ static bool apply_connection_proprties(ThisVPNEditorWidget *self, NMConnection *
 #endif
 
             else {
-                g_warning("apply_connection_proprties() Unknown apply_connection_proprties type for key %s : %s", key.c_str(), G_OBJECT_TYPE_NAME(widget));
+                g_warning("apply_connection_proprties() Unhandled widget type %s for key %s", G_OBJECT_TYPE_NAME(widget), key.c_str());
                 return;
             }
         },
@@ -226,7 +298,7 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
     set_prefixed_widget_name(box_main, "MainBox");
     // margin set
 
-    for (guint i = 0; i < json_array_get_length(section_array); i++) {
+    for (int i = 0; i < json_array_get_length(section_array); i++) {
         JsonNode *section_node = json_array_get_element(section_array, i);
         JsonObject *section_obj = json_node_get_object(section_node);
         if (!section_obj) {
@@ -257,8 +329,8 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
         gtk_widget_set_margin_start(box_section, 15);
 
         g_debug("Adding input widgets to section: %s", section_title.c_str());
-        string value_change_signal_name = "changed";
-        for (guint j = 0; j < json_array_get_length(input_def_array); j++) {
+        for (int j = 0; j < json_array_get_length(input_def_array); j++) {
+            string value_change_signal_name = "changed";
             JsonNode *input_def_node = json_array_get_element(input_def_array, j);
             JsonObject *input_def_obj = json_node_get_object(input_def_node);
             if (!input_def_obj) {
@@ -285,7 +357,8 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
                             j);
                 continue;
             }
-            GtkWidget *widget_input;
+            GtkWidget *widget_input = nullptr;
+            GtkWidget *widget_input_holder = nullptr;
             if (type == "integer") {
                 gint64 min_v = json_object_get_int_member_with_default(input_def_obj, "min_value", 0);
                 gint64 max_v = json_object_get_int_member_with_default(input_def_obj, "max_value", 999999);
@@ -337,6 +410,77 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
                     gtk_entry_set_placeholder_text(GTK_ENTRY(widget_input), json_object_get_string_member_with_default(input_def_obj, "placeholder", ""));
                 }
                 // gint64 min_length = json_object_get_int_member(input_def_obj, "min_length");
+            } else if (type == "array") {
+                vector<string> default_values;
+                JsonArray *default_value_array = json_object_get_array_member(input_def_obj, "default");
+                string default_value;
+                if (!default_value_array) {
+                    for (int k = 0; k < json_array_get_length(default_value_array); k++) {
+                        JsonNode *n = json_array_get_element(default_value_array, k);
+                        default_values.push_back(STR(json_node_get_string(n)));
+                    }
+                }
+#if GTK_CHECK_VERSION(4, 0, 0)
+                GtkStringList *string_list = gtk_string_list_new(NULL);
+                for (const string v : default_values) {
+                    gtk_string_list_append(string_list, v.c_str());
+                }
+                GtkSingleSelection *ss = gtk_single_selection_new(G_LIST_MODEL(string_list));
+                GtkWidget *listview = gtk_list_view_new(GTK_SELECTION_MODEL(GTK_SELECTION_MODEL(ss)), nullptr);
+                gtk_list_view_set_single_click_activate(GTK_LIST_VIEW(listview), true);
+
+#else
+                GtkTreeIter iter;
+                GtkListStore *string_list = gtk_list_store_new(1, G_TYPE_STRING);
+                for (const string v : default_values) {
+                    gtk_list_store_append(string_list, &iter);
+                    gtk_list_store_set(string_list, &iter, 0, v.c_str(), -1);
+                }
+                GtkWidget *listview = gtk_tree_view_new_with_model(GTK_TREE_MODEL(string_list));
+                GtkCellRenderer *cell_renderer = gtk_cell_renderer_text_new();
+                g_object_set(cell_renderer, "editable", true, nullptr);
+                g_signal_connect(cell_renderer,
+                                 "edited",
+                                 G_CALLBACK(+[](GtkCellRendererText *cell, const gchar *path_string, const gchar *new_text, gpointer data) {
+                                     GtkListStore *store = (GtkListStore *)data;
+                                     GtkTreeIter iter;
+                                     GtkTreePath *path = gtk_tree_path_new_from_string(path_string);
+                                     gtk_tree_model_get_iter(GTK_TREE_MODEL(store), &iter, path);
+                                     gtk_list_store_set(store, &iter, 0, new_text, -1);
+                                     gtk_tree_path_free(path);
+                                 }),
+                                 string_list);
+                GtkTreeViewColumn *column = gtk_tree_view_column_new_with_attributes("Strings", cell_renderer, "text", 0, nullptr);
+                gtk_tree_view_append_column(GTK_TREE_VIEW(listview), column);
+                gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(listview), false);
+#endif
+
+                GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
+                GtkWidget *hbox_buttons = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
+                gtk_box_append(GTK_BOX(vbox), listview);
+                gtk_box_append(GTK_BOX(vbox), hbox_buttons);
+
+                GtkWidget *add_button = gtk_button_new_from_icon_name_("list-add-symbolic");
+                gtk_box_append(GTK_BOX(hbox_buttons), add_button);
+                g_signal_connect(add_button,
+                                 "clicked",
+                                 G_CALLBACK(+[](GtkButton *button, gpointer data) {
+                                     append_to_ist_view(data, "<edit>")
+                                 }),
+                                 string_list);
+
+                GtkWidget *delete_button = gtk_button_new_from_icon_name_("list-remove-symbolic");
+                gtk_box_append(GTK_BOX(hbox_buttons), delete_button);
+                g_signal_connect(delete_button,
+                                 "clicked",
+                                 G_CALLBACK(+[](GtkButton *button, gpointer data) {
+                                     remove_selected_from_list_view(data)
+                                 }),
+                                 listview);
+
+                widget_input = listview;
+                widget_input_holder = vbox;
+
             } else if (type == "boolean") {
                 widget_input = gtk_check_button_new();
                 bool default_v = json_object_get_boolean_member_with_default(input_def_obj, "default", false);
@@ -356,7 +500,7 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
                     return nullptr;
                 }
                 vector<string> enum_values;
-                for (guint k = 0; k < json_array_get_length(enum_array); k++) {
+                for (int k = 0; k < json_array_get_length(enum_array); k++) {
                     JsonNode *enum_node = json_array_get_element(enum_array, k);
                     enum_values.push_back(STR(json_node_get_string(enum_node)));
                 }
@@ -415,11 +559,14 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
             gtk_widget_set_halign(lbl_input, GTK_ALIGN_START);
             gtk_widget_set_tooltip_text(lbl_input, description.c_str());
 
+            if (widget_input_holder == nullptr) {
+                widget_input_holder = widget_input;
+            }
             GtkWidget *grid_input = gtk_grid_new();
             set_prefixed_widget_name(grid_input, id + "InputGrid");
             gtk_grid_set_column_homogeneous(GTK_GRID(grid_input), true);
             gtk_grid_attach(GTK_GRID(grid_input), lbl_input, 0, 0, 1, 1);
-            gtk_grid_attach(GTK_GRID(grid_input), widget_input, 1, 0, 1, 1);
+            gtk_grid_attach(GTK_GRID(grid_input), widget_input_holder, 1, 0, 1, 1);
 
             gtk_box_append(GTK_BOX(box_section), grid_input);
 
@@ -456,13 +603,13 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
     return editor_obj;
 }
 
-static gboolean update_connection_properties(NMVpnEditor *iface, NMConnection *connection, GError **error)
+static gboolean update_connection(NMVpnEditor *iface, NMConnection *connection, GError **error)
 {
     ThisVPNEditorWidget *self = THIS_VPN_EDITOR_WIDGET(iface);
     ThisVPNEditorWidgetPrivate *priv = (ThisVPNEditorWidgetPrivate *)this_vpn_editor_widget_get_instance_private(THIS_VPN_EDITOR_WIDGET(self));
     NMSettingVpn *s_vpn;
 
-    g_debug("update_connection_properties()");
+    g_debug("update_connection()");
 
     if (!check_validity(self, error))
         return false;
@@ -481,6 +628,27 @@ static gboolean update_connection_properties(NMVpnEditor *iface, NMConnection *c
             value = STR(gtk_editable_get_text(GTK_EDITABLE(widget)));
         } else if (G_TYPE_CHECK_INSTANCE_TYPE((widget), GTK_TYPE_CHECK_BUTTON)) {
             value = gtk_check_button_get_active(GTK_CHECK_BUTTON(widget)) ? "true" : "false";
+        } else if (IS_LIST_VIEW_WIDGET(widget)) {
+            JsonArray *arr = json_array_new();
+#if GTK_CHECK_VERSION(4, 0, 0)
+            GtkSelectionModel *ss = gtk_list_view_get_model(GTK_LIST_VIEW(widget));
+            GtkStringList *string_list = GTK_STRING_LIST(gtk_single_selection_get_model(GTK_SINGLE_SELECTION(ss)));
+            for (int i = 0; i < g_list_model_get_n_items(G_LIST_MODEL(string_list)); i++) {
+                auto model_item = g_list_model_get_item(G_LIST_MODEL(string_list), i);
+                const char *v = gtk_string_object_get_string(GTK_STRING_OBJECT(model_item));
+#else
+            GtkTreeModel *model = gtk_tree_view_get_model(GTK_TREE_VIEW(widget));
+            GtkTreeIter iter;
+            for (gboolean valid = gtk_tree_model_get_iter_first(model, &iter); valid; valid = gtk_tree_model_iter_next(model, &iter)) {
+                char *v;
+                gtk_tree_model_get(model, &iter, 0, &v, -1);
+#endif
+                g_debug("update_connection() get listview of key=%s with entry=%s", id.c_str(), v);
+                json_array_add_string_element(arr, v);
+            }
+            JsonNode *n = json_node_alloc();
+            json_node_init_array(n, arr);
+            value = STR(json_to_string(n, false));
         }
 #if GTK_CHECK_VERSION(4, 0, 0)
         else if (G_TYPE_CHECK_INSTANCE_TYPE((widget), GTK_TYPE_DROP_DOWN)) {
@@ -496,7 +664,7 @@ static gboolean update_connection_properties(NMVpnEditor *iface, NMConnection *c
         }
 #endif
         else {
-            g_warning("update_connection_properties() Unknown widget type for key %s : %s", id.c_str(), G_OBJECT_TYPE_NAME(widget));
+            g_warning("update_connection() Unknown widget type for key %s : %s", id.c_str(), G_OBJECT_TYPE_NAME(widget));
         }
         if (!value.empty()) {
             g_debug("Set key=%s value=%s", id.c_str(), value.c_str());
@@ -524,5 +692,5 @@ static void this_vpn_editor_widget_interface_init(NMVpnEditorInterface *iface_cl
         g_debug("get_widget() iface=%s widget=%s", G_OBJECT_TYPE_NAME(iface), priv->widget ? G_OBJECT_TYPE_NAME(priv->widget) : "null");
         return G_OBJECT(priv->widget);
     };
-    iface_class->update_connection = update_connection_properties;
+    iface_class->update_connection = update_connection;
 }

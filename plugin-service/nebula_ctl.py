@@ -11,6 +11,7 @@ from .utils import (
     Subprocess,
     find_valid_if_name,
     get_iface_addresses,
+    getter,
     is_interface_ready,
     timeout,
 )
@@ -48,7 +49,8 @@ class NebulaControl(VPNConnectionControlBase):
             os.unlink(self._config_file)
 
     def _run_nebula(self, connection_name, vpn_data: dict[str, str]):
-        nebula_bin = vpn_data.get("nebula-bin", "nebula").strip()
+        vpn_data_get = getter(vpn_data)
+        nebula_bin = vpn_data_get("nebula-bin", "nebula")
         nebula_cmd = [nebula_bin, "-config", self._config_file]
         config = defaultdict(dict)
         config["pki"] = {
@@ -62,24 +64,29 @@ class NebulaControl(VPNConnectionControlBase):
             "interval": 60,
             "hosts": [vpn_data["lighthouse-overlay-ip"]],
         }
-        config["tun"]["dev"] = vpn_data.get("tun-dev", "").strip() or find_valid_if_name(connection_name)
-        if logging_level := vpn_data.get("logging-level", "").strip():
+        config["tun"]["dev"] = vpn_data_get("tun-dev") or find_valid_if_name(connection_name)
+        if logging_level := vpn_data_get("logging-level"):
             config["logging"]["level"] = logging_level
         if "realy-use_relays" in vpn_data:
             config["realy"]["use_relays"] = vpn_data["realy-use_relays"]
-        if listen_host := vpn_data.get("listen-host", "").strip():
+        if listen_host := vpn_data_get("listen-host"):
             config["listen"]["host"] = listen_host
-        if listen_port := int(vpn_data.get("listen-port", "0").strip()):
+        if listen_port := int(vpn_data_get("listen-port", 0)):
             config["listen"]["port"] = listen_port
 
-        config["firewall"]["outbound"] = [{"port": "any", "proto": "any", "host": "any"}]
-        config["firewall"]["inbound"] = [{"port": "any", "proto": "any", "host": "any"}]
+        config["firewall"]["inbound"] = self._parse_fw_rules(
+            vpn_data_get("inbound-rules", "port=any,proto=icmp,host=any")
+        )
+        config["firewall"]["outbound"] = self._parse_fw_rules(
+            vpn_data_get("outbound-rules", "port=any,proto=any,host=any")
+        )
 
+        logging.debug("Nebula config: %r", config)
         with open(self._config_file, "w") as f:
             json.dump(config, f, indent=4)
 
         stderr = sys.stderr
-        if log_file := vpn_data.get("log-file", ""):
+        if log_file := vpn_data_get("log-file"):
             stderr = open(log_file, "wb+")
         logging.info("Run nebula %r", nebula_cmd)
         self._proc_nebula = Subprocess(nebula_cmd, name="nebula", stderr=stderr)
@@ -92,3 +99,21 @@ class NebulaControl(VPNConnectionControlBase):
                 t.sleep(self._ready_check_interval_sec)
 
         return dev
+
+    def _parse_fw_rules(self, rules_serilaized: str):
+        rules = []
+        for r in json.loads(rules_serilaized):
+            rule = {}
+            for kv in r.split(","):
+                k, v = kv.split("=")
+                k = k.strip()
+                v = v.strip()
+                if k == "port":
+                    try:
+                        v = int(v)
+                    except ValueError:
+                        pass
+                rule[k] = v
+            if rule and rule not in rules:
+                rules.append(rule)
+        return rules

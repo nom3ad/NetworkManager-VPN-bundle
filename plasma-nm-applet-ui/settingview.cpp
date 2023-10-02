@@ -8,6 +8,7 @@
 #include <QtWidgets/QGroupBox>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QLineEdit>
+#include <QtWidgets/QListView>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QSpinBox>
 #include <QtWidgets/QTableView>
@@ -21,6 +22,7 @@
 #include <QtCore/QJsonDocument>
 #include <QtCore/QJsonObject>
 #include <QtCore/QRegularExpression>
+#include <QtCore/QStringListModel>
 
 #include <klocalizedstring.h>
 
@@ -64,20 +66,20 @@ VPNProviderSettingView::VPNProviderSettingView(const NetworkManager::VpnSetting:
     , m_setting(setting)
     , m_inputs()
 {
-    qDebug("SettingView::SettingView()");
+    qCDebug(vpnBundle, "SettingView::SettingView()");
 
     qDBusRegisterMetaType<NMStringMap>();
 
-    QFormLayout *mainLayout = new QFormLayout(this);
-    this->setLayout(mainLayout);
-    ////////////////////////////
+    QWidget *mainView = this;
+    mainView->setLayout(new QFormLayout(mainView));
+
     QJsonDocument inputFormJson = QJsonDocument::fromJson(QString(THIS_VPN_PROVIDER_INPUT_FORM_JSON).toUtf8());
 
     for (const QJsonValue sectionValue : inputFormJson.array()) {
         QString sectionTitle = sectionValue.toObject()["section"].toString();
         QGroupBox *gb = new QGroupBox(this);
         gb->setTitle(tr2i18n(sectionTitle.toUtf8(), nullptr));
-        mainLayout->addRow(gb);
+        mainView->layout()->addWidget(gb);
 
         QFormLayout *sectionLayout = new QFormLayout(this);
         gb->setLayout(sectionLayout);
@@ -91,7 +93,8 @@ VPNProviderSettingView::VPNProviderSettingView(const NetworkManager::VpnSetting:
             QString label = defObj["label"].toString(id);
             QString description = defObj["description"].toString();
             bool isRequired = defObj.value("required").toBool(false);
-            QWidget *inputWidget;
+            QWidget *inputWidget = nullptr;
+            QWidget *fieldWidget = nullptr;
             if (type == "integer") {
                 QSpinBox *sb = new QSpinBox(this);
                 sb->setObjectName("sb_" + id);
@@ -136,6 +139,49 @@ VPNProviderSettingView::VPNProviderSettingView(const NetworkManager::VpnSetting:
                     connect(le, &QLineEdit::textChanged, this, &SettingWidget::settingChanged);
                     inputWidget = le;
                 }
+            } else if (type == "array") {
+                QListView *lv = new QListView(this);
+                QStringListModel *model = new QStringListModel(lv);
+                lv->setObjectName("lv_" + id);
+                if (defObj["default"].isArray()) {
+                    for (const QJsonValue &value : defObj["default"].toArray()) {
+                        model->insertRow(model->rowCount());
+                        model->setData(model->index(model->rowCount() - 1), value.toString());
+                    }
+                }
+                lv->setModel(model);
+                QFrame *fieldFrame = new QFrame(this);
+                fieldFrame->setLayout(new QVBoxLayout(fieldFrame));
+                fieldFrame->setObjectName("frm" + id);
+                fieldFrame->setFrameShape(QFrame::StyledPanel);
+                fieldFrame->setFrameShadow(QFrame::Raised);
+                fieldFrame->layout()->addWidget(lv);
+
+                QFrame *btnFrame = new QFrame(this);
+                btnFrame->setLayout(new QHBoxLayout(btnFrame));
+                QPushButton *btnAdd = new QPushButton("Add", btnFrame);
+                connect(btnAdd, &QPushButton::clicked, [model]() {
+                    model->insertRow(model->rowCount());
+                    model->setData(model->index(model->rowCount() - 1), "port=any, protocol=any, host=any");
+                });
+                QPushButton *btnRemove = new QPushButton("Remove", btnFrame);
+                btnRemove->setEnabled(model->rowCount() > 0);
+                connect(btnRemove, &QPushButton::clicked, [lv, model]() {
+                    model->removeRow(lv->currentIndex().row());
+                });
+                connect(model, &QStringListModel::rowsRemoved, [btnRemove, model](const QModelIndex &, int, int) {
+                    btnRemove->setEnabled(model->rowCount() > 0);
+                });
+                connect(model, &QStringListModel::rowsInserted, [btnRemove, model](const QModelIndex &, int, int) {
+                    btnRemove->setEnabled(model->rowCount() > 0);
+                });
+
+                btnFrame->layout()->addWidget(btnAdd);
+                btnFrame->layout()->addWidget(btnRemove);
+                fieldFrame->layout()->addWidget(btnFrame);
+                inputWidget = lv;
+                fieldWidget = fieldFrame;
+
             } else if (type == "boolean") {
                 QCheckBox *cb = new QCheckBox(this);
                 cb->setObjectName("cb_" + id);
@@ -148,27 +194,34 @@ VPNProviderSettingView::VPNProviderSettingView(const NetworkManager::VpnSetting:
                 cmb->setObjectName("cmb_" + id);
                 if (defObj["default"].isString())
                     cmb->setCurrentText(defObj["default"].toString());
-                QJsonArray enumArray = defObj["values"].toArray();
-                for (int j = 0; j < enumArray.size(); ++j) {
-                    cmb->addItem(enumArray.at(j).toString());
+                if (defObj["default"].isArray()) {
+                    for (const QJsonValue &value : defObj["default"].toArray()) {
+                        cmb->addItem(value.toString());
+                    }
                 }
                 connect(cmb, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &SettingWidget::settingChanged);
                 connect(cmb, &QComboBox::currentTextChanged, this, &SettingWidget::settingChanged);
                 inputWidget = cmb;
             } else {
                 // TODO: KUrlRequester, PasswordField, etc.
-                qFatal("Unknown type: %s", type.toStdString().c_str());
+                qCCritical(vpnBundle, "Unknown type: %s", type.toStdString().c_str());
                 continue;
             }
             inputWidget->setToolTip(tr2i18n(description.toUtf8(), nullptr));
+            m_inputs.insert(id, QPair<QJsonObject, QWidget *>(defObj, inputWidget));
+            inputWidget->setProperty("InputId", id);
+            inputWidget->setProperty("InputType", type);
+            inputWidget->setProperty("InputDef", defObj);
+
+            if (fieldWidget == nullptr) {
+                fieldWidget = inputWidget;
+            }
             QLabel *lbl = new QLabel(this);
             lbl->setObjectName("lbl_" + id);
             lbl->setText(tr2i18n(label.toUtf8(), nullptr));
             lbl->setToolTip(tr2i18n(description.toUtf8(), nullptr));
             sectionLayout->setWidget(i, QFormLayout::LabelRole, lbl);
-            sectionLayout->setWidget(i, QFormLayout::FieldRole, inputWidget);
-
-            m_inputs.insert(id, QPair<QJsonObject, QWidget *>(defObj, inputWidget));
+            sectionLayout->setWidget(i, QFormLayout::FieldRole, fieldWidget);
         }
     }
     //////////////////////
@@ -197,10 +250,13 @@ void VPNProviderSettingView::loadConfig(const NetworkManager::Setting::Ptr &sett
 
     for (const QString &key : data.keys()) {
         QString value = data.value(key);
-        // qDebug("loadConfig() -> Found VpnSettings.data: %s = %s", key.toStdString().c_str(), value.toStdString().c_str());
+        qCDebug(vpnBundle, "loadConfig() -> Found VpnSettings.data: %s = %s", key.toStdString().c_str(), value.toStdString().c_str());
+        if (value.isEmpty()) {
+            continue;
+        }
         QWidget *widget = m_inputs.value(key).second;
         if (!widget) {
-            qWarning("No input widget for key: %s", key.toStdString().c_str());
+            qCWarning(vpnBundle, "No input widget for key: %s", key.toStdString().c_str());
             continue;
         }
         if (QSpinBox *sb = qobject_cast<QSpinBox *>(widget)) {
@@ -209,10 +265,21 @@ void VPNProviderSettingView::loadConfig(const NetworkManager::Setting::Ptr &sett
             le->setText(value);
         } else if (QCheckBox *cb = qobject_cast<QCheckBox *>(widget)) {
             cb->setChecked(value == "true");
+        } else if (QListView *lv = qobject_cast<QListView *>(widget)) {
+            QJsonDocument valueJson = QJsonDocument::fromJson(value.toUtf8());
+            if (!valueJson.isArray()) {
+                continue;
+            }
+            QStringListModel *model = qobject_cast<QStringListModel *>(lv->model());
+            model->removeRows(0, model->rowCount());
+            for (const QJsonValue &value : valueJson.array()) {
+                model->insertRow(model->rowCount());
+                model->setData(model->index(model->rowCount() - 1), value.toString());
+            }
         } else if (QComboBox *cmb = qobject_cast<QComboBox *>(widget)) {
             cmb->setCurrentText(value);
         } else {
-            qWarning("Unknown input widget for key: %s", key.toStdString().c_str());
+            qCWarning(vpnBundle, "Unknown input widget %s for key: %s", widget->objectName().toStdString().c_str(), key.toStdString().c_str());
         }
     }
     // NOLINTNEXTLINE    // Or we gets "clang-analyzer-cplusplus.VirtualCall")
@@ -222,7 +289,8 @@ void VPNProviderSettingView::loadConfig(const NetworkManager::Setting::Ptr &sett
 void VPNProviderSettingView::loadSecrets(const NetworkManager::Setting::Ptr &setting)
 {
     NetworkManager::Setting *s = setting.get();
-    qCritical("XXX: loadSecrets() -> name() %s | needSecrets() %s ",
+    qCWarning(vpnBundle,
+              "XXX: loadSecrets() -> name() %s | needSecrets() %s ",
               s ? s->name().toStdString().c_str() : "",
               s ? s->needSecrets().join("\t").toStdString().c_str() : "");
 }
@@ -233,7 +301,6 @@ QVariantMap VPNProviderSettingView::setting() const
     setting.setServiceType(QLatin1String(THIS_VPN_PROVIDER_DBUS_SERVICE));
     NMStringMap data;
     NMStringMap secrets;
-
     for (const QString &key : m_inputs.keys()) {
         QString value;
         QWidget *widget = m_inputs.value(key).second;
@@ -247,8 +314,15 @@ QVariantMap VPNProviderSettingView::setting() const
             data.insert(key, cb->isChecked() ? "true" : "false");
         } else if (QComboBox *cmb = qobject_cast<QComboBox *>(widget)) {
             data.insert(key, cmb->currentText());
+        } else if (QListView *lv = qobject_cast<QListView *>(widget)) {
+            QJsonArray jsonArray;
+            QStringListModel *model = qobject_cast<QStringListModel *>(lv->model());
+            for (const QString &value : model->stringList()) {
+                jsonArray.append(value);
+            }
+            data.insert(key, QString::fromUtf8(QJsonDocument(jsonArray).toJson(QJsonDocument::Compact)));
         } else {
-            qWarning("Unknown input widget for key: %s", key.toStdString().c_str());
+            qCWarning(vpnBundle, "Unknown input widget for key: %s", key.toStdString().c_str());
         }
     }
 
@@ -277,6 +351,8 @@ bool VPNProviderSettingView::isValid() const
             if (!defObj.value("required").toBool() && le->text().isEmpty()) {
                 continue;
             }
+        } else {
+            qCDebug(vpnBundle, "validation not implemented for widget %s for key: %s", widget->objectName().toStdString().c_str(), key.toStdString().c_str());
         }
     }
     return true;

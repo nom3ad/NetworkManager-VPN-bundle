@@ -9,7 +9,7 @@
             "inputs": [
                 {
                     "id": "pki-ca",
-                    "type": "string",   
+                    "type": "string",
                     "label": "PKI CA",
                     "description": "The CAs that are accepted by this node. Must contain one or more certificates created by 'nebula-cert ca'",
                     "required": true
@@ -39,6 +39,29 @@
                     "type": "string",
                     "label": "Lighthouse Host:Port",
                     "description": "The static host:port of the lighthouse node"
+                }
+            ]
+        },
+        {
+            "section": "Firewall",
+            "inputs": [
+                {
+                    "id": "inbound-rules",
+                    "type": "array",
+                    "label": "Inbound Rules",
+                    "description": "Inbound firewall rules. comma seperated key=value pairs",
+                    "default": [
+                        "port=any, proto=icmp, host=any"
+                    ]
+                },
+                {
+                    "id": "outbound-rules",
+                    "type": "array",
+                    "label": "Outbound Rules",
+                    "description": "Outbound firewall rules. comma seperated key=value pairs",
+                    "default": [
+                        "port=any, proto=any, host=any"
+                    ]
                 }
             ]
         },
@@ -76,7 +99,12 @@
                     "type": "enum",
                     "label": "Logging Level",
                     "description": "Configure logging level",
-                    "values": ["debug", "info", "warning", "error"],
+                    "values": [
+                        "debug",
+                        "info",
+                        "warning",
+                        "error"
+                    ],
                     "default": "info",
                     "required": false
                 },
