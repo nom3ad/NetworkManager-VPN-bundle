@@ -84,6 +84,7 @@ typedef void GtkRoot;
 #define apply_vector_to_list_model(widget, vec)                                                                                                                \
     {                                                                                                                                                          \
         GtkListStore *string_list = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(widget)));                                                            \
+        gtk_list_store_clear(string_list);                                                                                                                     \
         for (const string v : vec) {                                                                                                                           \
             GtkTreeIter iter;                                                                                                                                  \
             gtk_list_store_append(string_list, &iter);                                                                                                         \
@@ -92,20 +93,21 @@ typedef void GtkRoot;
     }
 #define remove_selected_from_list_view(listview)                                                                                                               \
     {                                                                                                                                                          \
-        GtkTreeView *listview = GTK_TREE_VIEW(data);                                                                                                           \
-        GtkTreeModel *model = gtk_tree_view_get_model(listview);                                                                                               \
+        GtkTreeView *treeview = GTK_TREE_VIEW(data);                                                                                                           \
+        GtkTreeModel *treemodel = gtk_tree_view_get_model(treeview);                                                                                           \
         GtkTreeIter iter;                                                                                                                                      \
-        GtkTreeSelection *selection = gtk_tree_view_get_selection(listview);                                                                                   \
-        if (selection && gtk_tree_selection_get_selected(selection, &model, &iter)) {                                                                          \
-            gtk_list_store_remove(GTK_LIST_STORE(model), &iter);                                                                                               \
+        GtkTreeSelection *selection = gtk_tree_view_get_selection(treeview);                                                                                   \
+        if (selection && gtk_tree_selection_get_selected(selection, &treemodel, &iter)) {                                                                      \
+            gtk_list_store_remove(GTK_LIST_STORE(treemodel), &iter);                                                                                           \
         }                                                                                                                                                      \
     }
 #define append_to_list_view(listview, item)                                                                                                                    \
     {                                                                                                                                                          \
-        GtkListStore *string_list = GTK_LIST_STORE(listview);                                                                                                  \
+        GtkTreeView *treeview = GTK_TREE_VIEW(listview);                                                                                                       \
+        GtkTreeModel *treemodel = gtk_tree_view_get_model(treeview);                                                                                           \
         GtkTreeIter iter;                                                                                                                                      \
-        gtk_list_store_append(string_list, &iter);                                                                                                             \
-        gtk_list_store_set(string_list, &iter, 0, "<edit>", -1);                                                                                               \
+        gtk_list_store_append(GTK_LIST_STORE(treemodel), &iter);                                                                                               \
+        gtk_list_store_set(GTK_LIST_STORE(treemodel), &iter, 0, item, -1);                                                                                     \
     }
 #else
 
@@ -161,8 +163,7 @@ typedef void GtkRoot;
     {                                                                                                                                                          \
         GtkSelectionModel *ss = gtk_list_view_get_model(GTK_LIST_VIEW(listview));                                                                              \
         GtkStringList *string_list = GTK_STRING_LIST(gtk_single_selection_get_model(GTK_SINGLE_SELECTION(ss)));                                                \
-        GtkSingleSelection *selection = gtk_single_selection_new(G_LIST_MODEL(string_list));                                                                   \
-        guint selected = gtk_single_selection_get_selected(selection);                                                                                         \
+        guint selected = gtk_single_selection_get_selected(GTK_SINGLE_SELECTION(ss));                                                                          \
         if (selected != GTK_INVALID_LIST_POSITION) {                                                                                                           \
             gtk_string_list_remove(string_list, selected);                                                                                                     \
         }                                                                                                                                                      \
@@ -385,11 +386,12 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
         gtk_widget_set_margin_top(lbl_section, 10);
         gtk_box_append(GTK_BOX(box_main), lbl_section);
 
-        g_debug("Creating box for section: %s", section_title.c_str());
-        GtkWidget *box_section = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
-        set_prefixed_widget_name(box_section, section_title + "Box");
-        gtk_box_append(GTK_BOX(box_main), box_section);
-        gtk_widget_set_margin_start(box_section, 15);
+        g_debug("Creating grid for section: %s", section_title.c_str());
+        GtkWidget *grid_section = gtk_grid_new();
+        set_prefixed_widget_name(grid_section, "SectionInputsGrid");
+        gtk_grid_set_column_homogeneous(GTK_GRID(grid_section), true);
+        gtk_grid_set_row_spacing(GTK_GRID(grid_section), 5);
+        gtk_box_append(GTK_BOX(box_main), grid_section);
 
         g_debug("Adding input widgets to section: %s", section_title.c_str());
         for (int j = 0; j < json_array_get_length(input_def_array); j++) {
@@ -452,10 +454,10 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
                 }
                 // gint64 min_length = json_object_get_int_member(input_def_obj, "min_length");
             } else if (type == "array") {
+                value_change_signal_name = "";
                 vector<string> default_values;
                 JsonArray *default_value_array = json_object_get_array_member(input_def_obj, "default");
-                string default_value;
-                if (!default_value_array) {
+                if (default_value_array) {
                     for (int k = 0; k < json_array_get_length(default_value_array); k++) {
                         JsonNode *n = json_array_get_element(default_value_array, k);
                         default_values.push_back(STR(json_node_get_string(n)));
@@ -469,11 +471,12 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
                 GtkSingleSelection *ss = gtk_single_selection_new(G_LIST_MODEL(string_list));
                 GtkWidget *listview = gtk_list_view_new(GTK_SELECTION_MODEL(GTK_SELECTION_MODEL(ss)), nullptr);
                 gtk_list_view_set_single_click_activate(GTK_LIST_VIEW(listview), true);
+                gtk_list_view_set_enable_rubberband(GTK_LIST_VIEW(listview), true);
 
 #else
-                GtkTreeIter iter;
                 GtkListStore *string_list = gtk_list_store_new(1, G_TYPE_STRING);
                 for (const string v : default_values) {
+                    GtkTreeIter iter;
                     gtk_list_store_append(string_list, &iter);
                     gtk_list_store_set(string_list, &iter, 0, v.c_str(), -1);
                 }
@@ -503,12 +506,19 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
 
                 GtkWidget *add_button = gtk_button_new_from_icon_name_("list-add-symbolic");
                 gtk_box_append(GTK_BOX(hbox_buttons), add_button);
+                struct AddButtonData {
+                    string default_value;
+                    gpointer listview;
+                };
                 g_signal_connect(add_button,
                                  "clicked",
                                  G_CALLBACK(+[](GtkButton *button, gpointer data) {
-                                     append_to_list_view(data, "<edit>")
+                                     AddButtonData *add_button_data = (AddButtonData *)data;
+                                     gpointer listview = add_button_data->listview;
+                                     const char *default_value = add_button_data->default_value.c_str();
+                                     append_to_list_view(listview, default_value);
                                  }),
-                                 string_list);
+                                 (new AddButtonData{.default_value = (default_values.size() ? default_values[0] : "<edit>"), .listview = listview}));
 
                 GtkWidget *delete_button = gtk_button_new_from_icon_name_("list-remove-symbolic");
                 gtk_box_append(GTK_BOX(hbox_buttons), delete_button);
@@ -567,30 +577,28 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
             set_prefixed_widget_name(widget_input, id + "InputWidget");
             gtk_widget_set_tooltip_text(widget_input, description.c_str());
             // XXX: sourcery (https://stackoverflow.com/questions/49638121/gtk-g-signal-connect-and-c-lambda-results-in-invalid-cast-errors)
-            g_signal_connect(G_OBJECT(widget_input),
-                             value_change_signal_name.c_str(),
-                             G_CALLBACK(+[](G_GNUC_UNUSED GtkWidget *widget, gpointer user_data) -> void {
-                                 g_debug("stuff_changed_cb() widget: %p", gtk_widget_get_name(widget));
-                                 g_signal_emit_by_name(THIS_VPN_EDITOR_WIDGET(user_data), "changed");
-                             }),
-                             editor_obj);
+            if (!value_change_signal_name.empty()) {
+                g_signal_connect(G_OBJECT(widget_input),
+                                 value_change_signal_name.c_str(),
+                                 G_CALLBACK(+[](G_GNUC_UNUSED GtkWidget *widget, gpointer user_data) -> void {
+                                     g_debug("stuff_changed_cb() widget: %p", gtk_widget_get_name(widget));
+                                     g_signal_emit_by_name(THIS_VPN_EDITOR_WIDGET(user_data), "changed");
+                                 }),
+                                 editor_obj);
+            }
 
             GtkWidget *lbl_input = gtk_label_new(label.c_str());
             set_prefixed_widget_name(lbl_input, id + "InputLabel");
             gtk_label_set_use_markup(GTK_LABEL(lbl_input), true);
             gtk_widget_set_halign(lbl_input, GTK_ALIGN_START);
             gtk_widget_set_tooltip_text(lbl_input, description.c_str());
-
+            gtk_widget_set_margin_start(lbl_input, 10);
             if (widget_input_holder == nullptr) {
                 widget_input_holder = widget_input;
             }
-            GtkWidget *grid_input = gtk_grid_new();
-            set_prefixed_widget_name(grid_input, id + "InputGrid");
-            gtk_grid_set_column_homogeneous(GTK_GRID(grid_input), true);
-            gtk_grid_attach(GTK_GRID(grid_input), lbl_input, 0, 0, 1, 1);
-            gtk_grid_attach(GTK_GRID(grid_input), widget_input_holder, 1, 0, 1, 1);
-
-            gtk_box_append(GTK_BOX(box_section), grid_input);
+            gtk_grid_set_row_baseline_position(GTK_GRID(grid_section), j, GTK_BASELINE_POSITION_BOTTOM);
+            gtk_grid_attach(GTK_GRID(grid_section), lbl_input, 0, j, 1, 1);
+            gtk_grid_attach(GTK_GRID(grid_section), widget_input_holder, 1, j, 1, 1);
 
             InputItem input_item = {};
             input_item.widget = widget_input;

@@ -143,8 +143,10 @@ VPNProviderSettingView::VPNProviderSettingView(const NetworkManager::VpnSetting:
                 QListView *lv = new QListView(this);
                 QStringListModel *model = new QStringListModel(lv);
                 lv->setObjectName("lv_" + id);
+                QString defaultAddValue = "<edit>";
                 if (defObj["default"].isArray()) {
                     for (const QJsonValue &value : defObj["default"].toArray()) {
+                        defaultAddValue = value.toString();
                         model->insertRow(model->rowCount());
                         model->setData(model->index(model->rowCount() - 1), value.toString());
                     }
@@ -160,9 +162,9 @@ VPNProviderSettingView::VPNProviderSettingView(const NetworkManager::VpnSetting:
                 QFrame *btnFrame = new QFrame(this);
                 btnFrame->setLayout(new QHBoxLayout(btnFrame));
                 QPushButton *btnAdd = new QPushButton("Add", btnFrame);
-                connect(btnAdd, &QPushButton::clicked, [model]() {
+                connect(btnAdd, &QPushButton::clicked, [model, defaultAddValue]() {
                     model->insertRow(model->rowCount());
-                    model->setData(model->index(model->rowCount() - 1), "port=any, protocol=any, host=any");
+                    model->setData(model->index(model->rowCount() - 1), defaultAddValue);
                 });
                 QPushButton *btnRemove = new QPushButton("Remove", btnFrame);
                 btnRemove->setEnabled(model->rowCount() > 0);
