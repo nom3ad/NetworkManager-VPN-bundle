@@ -469,9 +469,11 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
                     gtk_string_list_append(string_list, v.c_str());
                 }
                 GtkSingleSelection *ss = gtk_single_selection_new(G_LIST_MODEL(string_list));
-                GtkWidget *listview = gtk_list_view_new(GTK_SELECTION_MODEL(GTK_SELECTION_MODEL(ss)), nullptr);
+                GtkListItemFactory *factory = gtk_signal_list_item_factory_new();
+                GtkWidget *listview = gtk_list_view_new(GTK_SELECTION_MODEL(ss), factory);
                 gtk_list_view_set_single_click_activate(GTK_LIST_VIEW(listview), true);
                 gtk_list_view_set_enable_rubberband(GTK_LIST_VIEW(listview), true);
+                gtk_list_view_set_show_separators(GTK_LIST_VIEW(listview), true);
 
 #else
                 GtkListStore *string_list = gtk_list_store_new(1, G_TYPE_STRING);
@@ -481,6 +483,9 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
                     gtk_list_store_set(string_list, &iter, 0, v.c_str(), -1);
                 }
                 GtkWidget *listview = gtk_tree_view_new_with_model(GTK_TREE_MODEL(string_list));
+                gtk_tree_view_set_grid_lines(GTK_TREE_VIEW(listview), GTK_TREE_VIEW_GRID_LINES_BOTH);
+                gtk_tree_view_set_reorderable(GTK_TREE_VIEW(listview), true);
+
                 GtkCellRenderer *cell_renderer = gtk_cell_renderer_text_new();
                 g_object_set(cell_renderer, "editable", true, nullptr);
                 g_signal_connect(cell_renderer,
@@ -593,9 +598,14 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
             gtk_widget_set_halign(lbl_input, GTK_ALIGN_START);
             gtk_widget_set_tooltip_text(lbl_input, description.c_str());
             gtk_widget_set_margin_start(lbl_input, 10);
+
             if (widget_input_holder == nullptr) {
                 widget_input_holder = widget_input;
+            } else {
+                gtk_widget_set_valign(lbl_input, GTK_ALIGN_START);
+                gtk_widget_set_margin_top(lbl_input, 5);
             }
+
             gtk_grid_set_row_baseline_position(GTK_GRID(grid_section), j, GTK_BASELINE_POSITION_BOTTOM);
             gtk_grid_attach(GTK_GRID(grid_section), lbl_input, 0, j, 1, 1);
             gtk_grid_attach(GTK_GRID(grid_section), widget_input_holder, 1, j, 1, 1);
