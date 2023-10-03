@@ -26,8 +26,60 @@ typedef void GtkRoot;
 #define gtk_check_button_get_active(button) gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(button))
 #define gtk_check_button_set_active(button, active) gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), active)
 #define gtk_box_append(box, widget) gtk_box_pack_start(box, widget, false, false, 0)
+
 #define GTK_TYPE_PASSWORD_ENTRY GTK_TYPE_ENTRY
+
 #define gtk_button_new_from_icon_name_(name) gtk_button_new_from_icon_name(name, GTK_ICON_SIZE_BUTTON)
+
+#define GTK_TYPE_DROP_DOWN GTK_TYPE_COMBO_BOX_TEXT
+#define gtk_dropdown_text_get_active_text(widget) gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(widget))
+#define gtk_dropdown_new_with_vec(vec, select_idx)                                                                                                             \
+    ({                                                                                                                                                         \
+        GtkWidget *w = gtk_combo_box_text_new();                                                                                                               \
+        for (const auto &v : vec) {                                                                                                                            \
+            gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(w), v.c_str());                                                                                  \
+        }                                                                                                                                                      \
+        if (select_idx >= 0) {                                                                                                                                 \
+            gtk_combo_box_set_active(GTK_COMBO_BOX(w), select_idx);                                                                                            \
+        }                                                                                                                                                      \
+        w;                                                                                                                                                     \
+    })
+#define gtk_dropdown_set_selected_value(widget, value)                                                                                                         \
+    {                                                                                                                                                          \
+        GtkTreeModel *model = gtk_combo_box_get_model(GTK_COMBO_BOX(widget));                                                                                  \
+        GtkTreeIter iter;                                                                                                                                      \
+        for (gboolean valid = gtk_tree_model_get_iter_first(model, &iter); valid; valid = gtk_tree_model_iter_next(model, &iter)) {                            \
+            char *enume_value_cstr;                                                                                                                            \
+            gtk_tree_model_get(model, &iter, 0, &enume_value_cstr, -1);                                                                                        \
+            if (value == enume_value_cstr) {                                                                                                                   \
+                gtk_combo_box_set_active_iter(GTK_COMBO_BOX(widget), &iter);                                                                                   \
+                break;                                                                                                                                         \
+            }                                                                                                                                                  \
+        }                                                                                                                                                      \
+    }
+
+#define gtk_password_entry_new_with_peek_icon()                                                                                                                \
+    ({                                                                                                                                                         \
+        GtkWidget *w = gtk_entry_new();                                                                                                                        \
+        gtk_entry_set_visibility(GTK_ENTRY(w), false);                                                                                                         \
+        gtk_entry_set_icon_from_icon_name(GTK_ENTRY(w), GTK_ENTRY_ICON_SECONDARY, "view-reveal-symbolic.symbolic");                                            \
+        gtk_entry_set_icon_activatable(GTK_ENTRY(w), GTK_ENTRY_ICON_SECONDARY, true);                                                                          \
+        g_signal_connect(w,                                                                                                                                    \
+                         "icon-press",                                                                                                                         \
+                         G_CALLBACK(+[](GtkWidget *widget, gpointer user_data) -> void {                                                                       \
+                             bool visible = gtk_entry_get_visibility(GTK_ENTRY(widget));                                                                       \
+                             if (visible) {                                                                                                                    \
+                                 gtk_entry_set_visibility(GTK_ENTRY(widget), false);                                                                           \
+                                 gtk_entry_set_icon_from_icon_name(GTK_ENTRY(widget), GTK_ENTRY_ICON_SECONDARY, "view-reveal-symbolic.symbolic");              \
+                             } else {                                                                                                                          \
+                                 gtk_entry_set_visibility(GTK_ENTRY(widget), true);                                                                            \
+                                 gtk_entry_set_icon_from_icon_name(GTK_ENTRY(widget), GTK_ENTRY_ICON_SECONDARY, "view-conceal-symbolic.symbolic");             \
+                             }                                                                                                                                 \
+                         }),                                                                                                                                   \
+                         nullptr);                                                                                                                             \
+        w;                                                                                                                                                     \
+    })
+
 #define IS_LIST_VIEW_WIDGET(widget) G_TYPE_CHECK_INSTANCE_TYPE((widget), GTK_TYPE_TREE_VIEW)
 #define apply_vector_to_list_model(widget, vec)                                                                                                                \
     {                                                                                                                                                          \
@@ -48,7 +100,7 @@ typedef void GtkRoot;
             gtk_list_store_remove(GTK_LIST_STORE(model), &iter);                                                                                               \
         }                                                                                                                                                      \
     }
-#define append_to_ist_view(listview, item)                                                                                                                     \
+#define append_to_list_view(listview, item)                                                                                                                    \
     {                                                                                                                                                          \
         GtkListStore *string_list = GTK_LIST_STORE(listview);                                                                                                  \
         GtkTreeIter iter;                                                                                                                                      \
@@ -57,7 +109,45 @@ typedef void GtkRoot;
     }
 #else
 
+#define gtk_dropdown_text_get_active_text(widget)                                                                                                              \
+    ({                                                                                                                                                         \
+        gpointer selected = gtk_drop_down_get_selected_item(GTK_DROP_DOWN(widget));                                                                            \
+        selected ? gtk_string_object_get_string(GTK_STRING_OBJECT(selected)) : nullptr;                                                                        \
+    })
+#define gtk_dropdown_new_with_vec(vec, select_idx)                                                                                                             \
+    ({                                                                                                                                                         \
+        GtkStringList *string_list = gtk_string_list_new(nullptr);                                                                                             \
+        for (const string v : vec) {                                                                                                                           \
+            gtk_string_list_append(string_list, v.c_str());                                                                                                    \
+        }                                                                                                                                                      \
+        GtkWidget *w = gtk_drop_down_new(G_LIST_MODEL(string_list), nullptr);                                                                                  \
+        if (select_idx >= 0) {                                                                                                                                 \
+            gtk_drop_down_set_selected(GTK_DROP_DOWN(w), select_idx);                                                                                          \
+        }                                                                                                                                                      \
+        w;                                                                                                                                                     \
+    })
+#define gtk_dropdown_set_selected_value(widget, value)                                                                                                         \
+    {                                                                                                                                                          \
+        GListModel *model = gtk_drop_down_get_model(GTK_DROP_DOWN(widget));                                                                                    \
+        for (int i = 0; i < g_list_model_get_n_items(model); i++) {                                                                                            \
+            auto model_item = g_list_model_get_item(model, i);                                                                                                 \
+            string enum_value = STR(gtk_string_object_get_string(GTK_STRING_OBJECT(model_item)));                                                              \
+            if (value == enum_value) {                                                                                                                         \
+                gtk_drop_down_set_selected(GTK_DROP_DOWN(widget), i);                                                                                          \
+                break;                                                                                                                                         \
+            }                                                                                                                                                  \
+        }                                                                                                                                                      \
+    }
+
+#define gtk_password_entry_new_with_peek_icon()                                                                                                                \
+    ({                                                                                                                                                         \
+        GtkWidget *w = gtk_password_entry_new();                                                                                                               \
+        gtk_password_entry_set_show_peek_icon(GTK_PASSWORD_ENTRY(w), true);                                                                                    \
+        w;                                                                                                                                                     \
+    })
+
 #define gtk_button_new_from_icon_name_(name) gtk_button_new_from_icon_name(name)
+
 #define IS_LIST_VIEW_WIDGET(widget) G_TYPE_CHECK_INSTANCE_TYPE((widget), GTK_TYPE_LIST_VIEW)
 #define apply_vector_to_list_model(widget, vec)                                                                                                                \
     {                                                                                                                                                          \
@@ -77,7 +167,7 @@ typedef void GtkRoot;
             gtk_string_list_remove(string_list, selected);                                                                                                     \
         }                                                                                                                                                      \
     }
-#define append_to_ist_view(listview, item)                                                                                                                     \
+#define append_to_list_view(listview, item)                                                                                                                    \
     {                                                                                                                                                          \
         GtkSelectionModel *ss = gtk_list_view_get_model(GTK_LIST_VIEW(listview));                                                                              \
         GtkStringList *string_list = GTK_STRING_LIST(gtk_single_selection_get_model(GTK_SINGLE_SELECTION(ss)));                                                \
@@ -222,37 +312,10 @@ static bool apply_connection_proprties(ThisVPNEditorWidget *self, NMConnection *
             } else if (G_TYPE_CHECK_INSTANCE_TYPE((widget), GTK_TYPE_CHECK_BUTTON)) {
                 bool v = value == "true";
                 gtk_check_button_set_active(GTK_CHECK_BUTTON(widget), v);
-            }
-#if GTK_CHECK_VERSION(4, 0, 0)
-            else if (G_TYPE_CHECK_INSTANCE_TYPE((widget), GTK_TYPE_DROP_DOWN)) {
-                GListModel *model = gtk_drop_down_get_model(GTK_DROP_DOWN(widget));
-                for (int i = 0; i < g_list_model_get_n_items(model); i++) {
-                    auto model_item = g_list_model_get_item(model, i);
-                    string enum_value = STR(gtk_string_object_get_string(GTK_STRING_OBJECT(model_item)));
-                    g_debug("apply_connection_proprties() Insert dropdown of key=%s with entry=%s", key.c_str(), enum_value.c_str());
-                    if (value == enum_value) {
-                        gtk_drop_down_set_selected(GTK_DROP_DOWN(widget), i);
-                        break;
-                    }
-                }
-            }
-#else
-            else if (G_TYPE_CHECK_INSTANCE_TYPE((widget), GTK_TYPE_COMBO_BOX_TEXT)) {
-                GtkTreeModel *model = gtk_combo_box_get_model(GTK_COMBO_BOX(widget));
-                GtkTreeIter iter;
-                for (gboolean valid = gtk_tree_model_get_iter_first(model, &iter); valid; valid = gtk_tree_model_iter_next(model, &iter)) {
-                    char *enume_value_cstr;
-                    gtk_tree_model_get(model, &iter, 0, &enume_value_cstr, -1);
-                    g_debug("apply_connection_proprties() Set combobox: key=%s value=%s", key.c_str(), enume_value_cstr);
-                    if (value == enume_value_cstr) {
-                        gtk_combo_box_set_active_iter(GTK_COMBO_BOX(widget), &iter);
-                        break;
-                    }
-                }
-            }
-#endif
-
-            else {
+            } else if (G_TYPE_CHECK_INSTANCE_TYPE((widget), GTK_TYPE_DROP_DOWN)) {
+                g_debug("apply_connection_proprties() Set dropdown of key=%s with value=%s", key.c_str(), value.c_str());
+                gtk_dropdown_set_selected_value(widget, value);
+            } else {
                 g_warning("apply_connection_proprties() Unhandled widget type %s for key %s", G_OBJECT_TYPE_NAME(widget), key.c_str());
                 return;
             }
@@ -373,29 +436,7 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
                 gint64 max_length = json_object_get_int_member_with_default(input_def_obj, "max_length", 128);
                 bool is_secret = json_object_get_boolean_member_with_default(input_def_obj, "is_secret", false);
                 if (is_secret) {
-#if GTK_CHECK_VERSION(4, 0, 0)
-                    widget_input = gtk_password_entry_new();
-                    gtk_password_entry_set_show_peek_icon(GTK_PASSWORD_ENTRY(widget_input), true);
-#else
-                    widget_input = gtk_entry_new();
-                    gtk_entry_set_visibility(GTK_ENTRY(widget_input), false);
-                    gtk_entry_set_icon_from_icon_name(GTK_ENTRY(widget_input), GTK_ENTRY_ICON_SECONDARY, "view-reveal-symbolic.symbolic");
-                    gtk_entry_set_icon_activatable(GTK_ENTRY(widget_input), GTK_ENTRY_ICON_SECONDARY, true);
-                    g_signal_connect(widget_input,
-                                     "icon-press",
-                                     G_CALLBACK(+[](GtkWidget *widget, gpointer user_data) -> void {
-                                         bool visible = gtk_entry_get_visibility(GTK_ENTRY(widget));
-
-                                         if (visible) {
-                                             gtk_entry_set_visibility(GTK_ENTRY(widget), false);
-                                             gtk_entry_set_icon_from_icon_name(GTK_ENTRY(widget), GTK_ENTRY_ICON_SECONDARY, "view-reveal-symbolic.symbolic");
-                                         } else {
-                                             gtk_entry_set_visibility(GTK_ENTRY(widget), true);
-                                             gtk_entry_set_icon_from_icon_name(GTK_ENTRY(widget), GTK_ENTRY_ICON_SECONDARY, "view-conceal-symbolic.symbolic");
-                                         }
-                                     }),
-                                     nullptr);
-#endif
+                    widget_input = gtk_password_entry_new_with_peek_icon();
                 } else {
                     widget_input = gtk_entry_new();
                 }
@@ -465,7 +506,7 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
                 g_signal_connect(add_button,
                                  "clicked",
                                  G_CALLBACK(+[](GtkButton *button, gpointer data) {
-                                     append_to_ist_view(data, "<edit>")
+                                     append_to_list_view(data, "<edit>")
                                  }),
                                  string_list);
 
@@ -516,26 +557,7 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
                         }
                     }
                 }
-
-#if GTK_CHECK_VERSION(4, 0, 0)
-                GtkStringList *string_list = gtk_string_list_new(NULL);
-                for (const auto &v : enum_values) {
-                    gtk_string_list_append(string_list, v.c_str());
-                }
-                widget_input = gtk_drop_down_new(G_LIST_MODEL(string_list), NULL);
-                if (default_val_idx >= 0) {
-                    gtk_drop_down_set_selected(GTK_DROP_DOWN(widget_input), default_val_idx);
-                }
-
-#else
-                widget_input = gtk_combo_box_text_new();
-                for (const auto &v : enum_values) {
-                    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(widget_input), v.c_str());
-                }
-                if (default_val_idx >= 0) {
-                    gtk_combo_box_set_active(GTK_COMBO_BOX(widget_input), default_val_idx);
-                }
-#endif
+                widget_input = gtk_dropdown_new_with_vec(enum_values, default_val_idx);
             }
 
             else {
@@ -649,21 +671,9 @@ static gboolean update_connection(NMVpnEditor *iface, NMConnection *connection, 
             JsonNode *n = json_node_alloc();
             json_node_init_array(n, arr);
             value = STR(json_to_string(n, false));
-        }
-#if GTK_CHECK_VERSION(4, 0, 0)
-        else if (G_TYPE_CHECK_INSTANCE_TYPE((widget), GTK_TYPE_DROP_DOWN)) {
-            auto selected = gtk_drop_down_get_selected_item(GTK_DROP_DOWN(widget));
-            if (!selected) {
-                continue;
-            }
-            value = STR(gtk_string_object_get_string(GTK_STRING_OBJECT(selected)));
-        }
-#else
-        else if (G_TYPE_CHECK_INSTANCE_TYPE((widget), GTK_TYPE_COMBO_BOX_TEXT)) {
-            value = STR(gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(widget)));
-        }
-#endif
-        else {
+        } else if (G_TYPE_CHECK_INSTANCE_TYPE((widget), GTK_TYPE_DROP_DOWN)) {
+            value = STR(gtk_dropdown_text_get_active_text(widget));
+        } else {
             g_warning("update_connection() Unknown widget type for key %s : %s", id.c_str(), G_OBJECT_TYPE_NAME(widget));
         }
         if (!value.empty()) {
