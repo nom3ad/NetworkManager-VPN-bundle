@@ -114,6 +114,11 @@ typedef void GtkRoot;
     }
 #else
 
+struct Pair {
+    void *first;
+    void *second;
+};
+
 #define gtk_dropdown_text_get_active_text(widget)                                                                                                              \
     ({                                                                                                                                                         \
         gpointer selected = gtk_drop_down_get_selected_item(GTK_DROP_DOWN(widget));                                                                            \
@@ -136,8 +141,7 @@ typedef void GtkRoot;
     {                                                                                                                                                          \
         GListModel *model = gtk_drop_down_get_model(GTK_DROP_DOWN(widget));                                                                                    \
         for (int i = 0; i < g_list_model_get_n_items(model); i++) {                                                                                            \
-            auto model_item = g_list_model_get_item(model, i);                                                                                                 \
-            string enum_value = STR(gtk_string_object_get_string(GTK_STRING_OBJECT(model_item)));                                                              \
+            string enum_value = STR(gtk_string_list_get_string(GTK_STRING_LIST(model), i));                                                                    \
             if (value == enum_value) {                                                                                                                         \
                 gtk_drop_down_set_selected(GTK_DROP_DOWN(widget), i);                                                                                          \
                 break;                                                                                                                                         \
@@ -159,6 +163,7 @@ typedef void GtkRoot;
     {                                                                                                                                                          \
         GtkSelectionModel *ss = gtk_list_view_get_model(GTK_LIST_VIEW(widget));                                                                                \
         GtkStringList *string_list = GTK_STRING_LIST(gtk_single_selection_get_model(GTK_SINGLE_SELECTION(ss)));                                                \
+        gtk_string_list_splice(string_list, 0, g_list_model_get_n_items(G_LIST_MODEL(string_list)), nullptr);                                                  \
         for (const string v : values)                                                                                                                          \
             gtk_string_list_append(string_list, v.c_str());                                                                                                    \
     }
@@ -473,22 +478,50 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
                     gtk_string_list_append(string_list, v.c_str());
                 }
                 GtkSingleSelection *ss = gtk_single_selection_new(G_LIST_MODEL(string_list));
-                const char *item_ui_string =
-                    "<interface>"
-                    " <template class=\"GtkListItem\">"
-                    "   <property name=\"child\">"
-                    "     <object class=\"GtkEditableLabel\">"
-                    "      <binding name=\"text\">"
-                    "        <lookup name=\"string\" type=\"GtkStringObject\">"
-                    "          <lookup name=\"item\">GtkListItem</lookup>"
-                    "        </lookup>"
-                    "      </binding>"
-                    "     </object>"
-                    "   </property>"
-                    " </template>"
-                    "</interface>";
-                GBytes *item_ui_string_bytes = g_bytes_new_static(item_ui_string, strlen(item_ui_string));
-                GtkListItemFactory *factory = gtk_builder_list_item_factory_new_from_bytes(nullptr, item_ui_string_bytes);
+                GtkListItemFactory *factory = gtk_signal_list_item_factory_new();
+                g_signal_connect(factory,
+                                 "setup",
+                                 G_CALLBACK(+[](GtkListItemFactory *factory, GtkListItem *listitem, gpointer user_data) {
+                                     GtkStringList *string_list = (GtkStringList *)user_data;
+                                     GtkWidget *w = gtk_entry_new();
+                                     gtk_list_item_set_child(listitem, w);
+                                     g_signal_connect(w,
+                                                      "changed",
+                                                      G_CALLBACK(+[](GtkWidget *w, gpointer user_data) {
+                                                          GtkStringList *string_list = (GtkStringList *)((Pair *)user_data)->first;
+                                                          GtkListItem *listitem = (GtkListItem *)((Pair *)user_data)->second;
+                                                          const char *text = gtk_editable_get_text(GTK_EDITABLE(w));
+                                                          const char *additions[2];
+                                                          additions[0] = text;
+                                                          additions[1] = nullptr;
+                                                          const int pos = gtk_list_item_get_position(GTK_LIST_ITEM(listitem));
+                                                          const char *prev_text = gtk_string_list_get_string(string_list, pos);
+                                                          if (strcmp(prev_text, text) == 0) {
+                                                              return;
+                                                          }
+                                                          gtk_string_list_splice(string_list, pos, 1, additions);
+                                                      }),
+                                                      (new Pair{string_list, listitem}));
+                                 }),
+                                 string_list);
+
+                g_signal_connect(factory,
+                                 "bind",
+                                 G_CALLBACK(+[](GtkSignalListItemFactory *self, GtkListItem *listitem, gpointer user_data) {
+                                     GtkWidget *w = gtk_list_item_get_child(listitem);
+                                     GtkStringObject *strobj = (GtkStringObject *)gtk_list_item_get_item(listitem);
+                                     const char *text = gtk_string_object_get_string(strobj);
+                                     gtk_editable_set_text(GTK_EDITABLE(w), text);
+                                 }),
+                                 NULL);
+                g_signal_connect(factory, "unbind", G_CALLBACK(+[](GtkSignalListItemFactory *self, GtkListItem *listitem, gpointer user_data) {}), NULL);
+                g_signal_connect(factory,
+                                 "teardown",
+                                 G_CALLBACK(+[](GtkListItemFactory *factory, GtkListItem *listitem, gpointer user_data) {
+                                     gtk_list_item_set_child(listitem, NULL);
+                                 }),
+                                 NULL);
+
                 GtkWidget *listview = gtk_list_view_new(GTK_SELECTION_MODEL(ss), factory);
                 gtk_list_view_set_single_click_activate(GTK_LIST_VIEW(listview), true);
                 gtk_list_view_set_enable_rubberband(GTK_LIST_VIEW(listview), true);
@@ -728,8 +761,7 @@ static gboolean update_connection(NMVpnEditor *iface, NMConnection *connection, 
             GtkSelectionModel *ss = gtk_list_view_get_model(GTK_LIST_VIEW(widget));
             GtkStringList *string_list = GTK_STRING_LIST(gtk_single_selection_get_model(GTK_SINGLE_SELECTION(ss)));
             for (int i = 0; i < g_list_model_get_n_items(G_LIST_MODEL(string_list)); i++) {
-                auto model_item = g_list_model_get_item(G_LIST_MODEL(string_list), i);
-                const char *v = gtk_string_object_get_string(GTK_STRING_OBJECT(model_item));
+                const char *v = gtk_string_list_get_string(string_list, i);
 #else
             GtkTreeModel *model = gtk_tree_view_get_model(GTK_TREE_VIEW(widget));
             GtkTreeIter iter;
