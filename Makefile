@@ -3,7 +3,7 @@ export LC_ALL=C
 AUTH_CONFIG_HINT_PREFIX=x-vpn-message:
 TEST_VPN_MESSAGE=Please authenticate using: <b><a href=\'http://example.com\'>http://example.com</a></b>
 TEST_VPN_QR_IMAGE_B64=iVBORw0KGgoAAAANSUhEUgAAAIAAAACAAQMAAAD58POIAAAABlBMVEX///8AAABVwtN+AAABQklEQVR42uTUMY6kMBAF0G85cNbcgL5GB5Z8JYdkdkbIlSwRcA24gTtz0Kq/aqZHQ7QYT7Zb4QsQ1Kc+/rPRpLjMFODItRESehdVglioSljYP7r7HMWG5y/ATJx5Ddy06jH/AhJ6k7c53g4fdwKkPPw2j7fDCi/CewwFRg7p/R10CixBpeGZhk9QZwD4bckbx6zL5zHXwU1cMl8Gdsh1oBO25BVL1uP3Cq8CEEgqRjLWwgNqmcTx+09uAL3EO+PGIjo+6wBmUgXva9ClGRDujHwBevzEfQY6+dVl9TJMg7RC8WIiX4NY8xVDBWAFOMesx6+wm6B/+N6GjpQ62LPqSN4QUAf7zYXeQmw77E0ndhAM3VoH72LzvYv7q7SDy+TYpZ+CPQcEsYZzYSsk9PCwwKEcT2DfmEo/LXUd/uH5EwAA//9iCrA7VlI+bwAAAABJRU5ErkJggg==
-TEST_VPN_NAME=test-vpn
+TEST_VPN_NAME=$(shell printf "test-%s" "$${provider:-"vpn"}")
 TEST_VPN_SERVICE=org.freedesktop.NetworkManager.test
 TEST_VPN_UUID=$(shell nmcli connection show $(TEST_VPN_NAME) | (grep connection.uuid || echo '_ missing!') | awk '{ print $$2 }')
 AUTH_CONFIG_HINT=$(AUTH_CONFIG_HINT_PREFIX)$(shell jq -cn --arg message "$(TEST_VPN_MESSAGE)" --arg qr_image "$(TEST_VPN_QR_IMAGE_B64)" '{message:$$message,qr_image:$$qr_image}' | sed 's|"|\\"|g')

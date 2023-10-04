@@ -2,8 +2,10 @@
 #include <glib-object.h>
 #include <gtk/gtk.h>
 // #include <glib/gi18n-lib.h>
+#include <iostream>
 #include <json-glib/json-glib.h>
 #include <regex>
+#include <sstream>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -33,6 +35,7 @@ typedef void GtkRoot;
 
 #define GTK_TYPE_DROP_DOWN GTK_TYPE_COMBO_BOX_TEXT
 #define gtk_dropdown_text_get_active_text(widget) gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(widget))
+#define GTK_DROPDOWN_CHANGE_EVENT "changed"
 #define gtk_dropdown_new_with_vec(vec, select_idx)                                                                                                             \
     ({                                                                                                                                                         \
         GtkWidget *w = gtk_combo_box_text_new();                                                                                                               \
@@ -116,6 +119,7 @@ typedef void GtkRoot;
         gpointer selected = gtk_drop_down_get_selected_item(GTK_DROP_DOWN(widget));                                                                            \
         selected ? gtk_string_object_get_string(GTK_STRING_OBJECT(selected)) : nullptr;                                                                        \
     })
+#define GTK_DROPDOWN_CHANGE_EVENT "notify::selected-item"
 #define gtk_dropdown_new_with_vec(vec, select_idx)                                                                                                             \
     ({                                                                                                                                                         \
         GtkStringList *string_list = gtk_string_list_new(nullptr);                                                                                             \
@@ -200,7 +204,7 @@ G_DEFINE_TYPE_WITH_CODE(ThisVPNEditorWidget,
 static inline void set_prefixed_widget_name(GtkWidget *widget, string s1)
 {
     string name(THIS_VPN_PROVIDER_ID);
-    name += "-" + name;
+    name += ":" + s1;
     gtk_widget_set_name(widget, name.c_str());
 }
 
@@ -395,7 +399,6 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
 
         g_debug("Adding input widgets to section: %s", section_title.c_str());
         for (int j = 0; j < json_array_get_length(input_def_array); j++) {
-            string value_change_signal_name = "changed";
             JsonNode *input_def_node = json_array_get_element(input_def_array, j);
             JsonObject *input_def_obj = json_node_get_object(input_def_node);
             if (!input_def_obj) {
@@ -424,6 +427,8 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
             }
             GtkWidget *widget_input = nullptr;
             GtkWidget *widget_input_holder = nullptr;
+            GObject *input_change_event_object = nullptr;
+            string input_value_change_signals = "changed";
             if (type == "integer") {
                 gint64 min_v = json_object_get_int_member_with_default(input_def_obj, "min_value", 0);
                 gint64 max_v = json_object_get_int_member_with_default(input_def_obj, "max_value", 999999);
@@ -454,7 +459,6 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
                 }
                 // gint64 min_length = json_object_get_int_member(input_def_obj, "min_length");
             } else if (type == "array") {
-                value_change_signal_name = "";
                 vector<string> default_values;
                 JsonArray *default_value_array = json_object_get_array_member(input_def_obj, "default");
                 if (default_value_array) {
@@ -474,8 +478,11 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
                 gtk_list_view_set_single_click_activate(GTK_LIST_VIEW(listview), true);
                 gtk_list_view_set_enable_rubberband(GTK_LIST_VIEW(listview), true);
                 gtk_list_view_set_show_separators(GTK_LIST_VIEW(listview), true);
+                input_value_change_signals = "items-changed";
+                input_change_event_object = G_OBJECT(string_list);
 
 #else
+                input_value_change_signals = "";
                 GtkListStore *string_list = gtk_list_store_new(1, G_TYPE_STRING);
                 for (const string v : default_values) {
                     GtkTreeIter iter;
@@ -502,6 +509,9 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
                 GtkTreeViewColumn *column = gtk_tree_view_column_new_with_attributes("Strings", cell_renderer, "text", 0, nullptr);
                 gtk_tree_view_append_column(GTK_TREE_VIEW(listview), column);
                 gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(listview), false);
+
+                input_value_change_signals = "row-changed";
+                input_change_event_object = G_OBJECT(string_list);
 #endif
 
                 GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
@@ -542,7 +552,7 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
                 bool default_v = json_object_get_boolean_member_with_default(input_def_obj, "default", false);
                 g_debug("Add input type=%s: id=%s default=%d", type.c_str(), id.c_str(), default_v);
                 gtk_check_button_set_active(GTK_CHECK_BUTTON(widget_input), default_v);
-                value_change_signal_name = "toggled";
+                input_value_change_signals = "toggled";
             } else if (type == "enum") {
                 JsonArray *enum_array = json_object_get_array_member(input_def_obj, "values");
                 if (!enum_array) {
@@ -573,27 +583,56 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
                     }
                 }
                 widget_input = gtk_dropdown_new_with_vec(enum_values, default_val_idx);
+                input_value_change_signals = GTK_DROPDOWN_CHANGE_EVENT;
             }
 
             else {
                 g_warning("Found unknown type %s", type.c_str());
                 continue;
             }
-            set_prefixed_widget_name(widget_input, id + "InputWidget");
+            set_prefixed_widget_name(widget_input, id + ":widget");
             gtk_widget_set_tooltip_text(widget_input, description.c_str());
-            // XXX: sourcery (https://stackoverflow.com/questions/49638121/gtk-g-signal-connect-and-c-lambda-results-in-invalid-cast-errors)
-            if (!value_change_signal_name.empty()) {
-                g_signal_connect(G_OBJECT(widget_input),
-                                 value_change_signal_name.c_str(),
-                                 G_CALLBACK(+[](G_GNUC_UNUSED GtkWidget *widget, gpointer user_data) -> void {
-                                     g_debug("stuff_changed_cb() widget: %p", gtk_widget_get_name(widget));
-                                     g_signal_emit_by_name(THIS_VPN_EDITOR_WIDGET(user_data), "changed");
+            if (input_change_event_object == nullptr) {
+                input_change_event_object = G_OBJECT(widget_input);
+            }
+            string signal_name;
+            istringstream input_value_change_signals_ss(input_value_change_signals);
+            struct ChangeSignalContext {
+                GtkWidget *widget;
+                NMVpnEditor *editor;
+                string signal_name;
+            };
+            while (getline(input_value_change_signals_ss, signal_name, ',')) {
+                if (signal_name.empty()) {
+                    continue;
+                }
+                // XXX: sourcery (https://stackoverflow.com/questions/49638121/gtk-g-signal-connect-and-c-lambda-results-in-invalid-cast-errors)
+                g_signal_connect(input_change_event_object,
+                                 signal_name.c_str(),
+                                 G_CALLBACK(+[](GObject *object, gpointer a, gpointer b, gpointer c, gpointer d) -> void {
+                                     string object_type = G_OBJECT_TYPE_NAME(object);
+                                     g_warning("inside callback %s o=%p a=%p b=%p c=%p d=%p", object_type.c_str(), object, a, b, c, d);
+                                     gpointer user_data = a;
+                                     if (object_type == "GtkDropDown") { // gtk4
+                                         user_data = b;
+                                     } else if (object_type == "GtkListStore") { // gtk3
+                                         user_data = c;
+                                     } else if (object_type == "GtkStringList") { // gtk4
+                                         user_data = d;
+                                     }
+                                     ChangeSignalContext *ctx = (ChangeSignalContext *)user_data;
+                                     g_debug("stuff_changed_cb() signal: %s, widget: object=%s | widget= %s | name= %s",
+                                             ctx->signal_name.c_str(),
+                                             object_type.c_str(),
+                                             G_OBJECT_TYPE_NAME(ctx->widget),
+                                             gtk_widget_get_name(ctx->widget));
+                                     g_signal_emit_by_name(THIS_VPN_EDITOR_WIDGET(ctx->editor), "changed");
                                  }),
-                                 editor_obj);
+                                 (new ChangeSignalContext{.widget = widget_input, .editor = editor_obj, .signal_name = signal_name}));
             }
 
             GtkWidget *lbl_input = gtk_label_new(label.c_str());
-            set_prefixed_widget_name(lbl_input, id + "InputLabel");
+            set_prefixed_widget_name(lbl_input, id + ":label");
             gtk_label_set_use_markup(GTK_LABEL(lbl_input), true);
             gtk_widget_set_halign(lbl_input, GTK_ALIGN_START);
             gtk_widget_set_tooltip_text(lbl_input, description.c_str());
