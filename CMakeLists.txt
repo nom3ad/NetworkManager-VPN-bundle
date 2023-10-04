@@ -118,6 +118,7 @@ endforeach()
 
 if(NOT VPN_BUNDLE_DISABLE_BUILD_GTK_PLUGIN) 
   add_subdirectory("auth-dialog")
+  add_subdirectory("test-gtk4-editor")
 endif()
 
 # file(COPY plugin-service DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/plugin-service)

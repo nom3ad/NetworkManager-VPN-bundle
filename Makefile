@@ -62,6 +62,11 @@ run-auth-dialog:
 	make build-auth-dialog && \
 	G_MESSAGES_DEBUG=all ./build/auth-dialog/build/bin/nm-vpn-bundle-auth-dialog -s "$(TEST_VPN_SERVICE)" -n "$(TEST_VPN_NAME)" -u "$(TEST_VPN_UUID)"  -t "$(AUTH_CONFIG_HINT)" -t foo -t bar
 
+run-test-gtk4-editor:
+	@set -x; \
+	ninja -C build test-gtk4-editor; \
+	VPN_PROVIDER=$$provider G_MESSAGES_DEBUG=all ./build/bin/test-gtk4-editor
+
 dev-install-watch:
 	while inotifywait --recursive --event close_write,moved_to,create common/ plugin-service/ providers/ property-editor/ plasma-nm-applet-ui/ auth-dialog/ CMakeLists.txt *.in; \
 	do \

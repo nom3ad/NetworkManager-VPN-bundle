@@ -429,7 +429,7 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
                 gint64 max_v = json_object_get_int_member_with_default(input_def_obj, "max_value", 999999);
                 widget_input = gtk_spin_button_new_with_range(min_v, max_v, 1);
                 gint64 default_v = json_object_get_int_member_with_default(input_def_obj, "default", 0);
-                g_debug("Found type=%s: id=%s default=%d, min_v=%d max_v=%d", type.c_str(), id.c_str(), default_v, min_v, max_v);
+                g_debug("Add input type=%s: id=%s default=%d, min_v=%d max_v=%d", type.c_str(), id.c_str(), default_v, min_v, max_v);
                 if (default_v) {
                     gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget_input), default_v);
                 }
@@ -442,7 +442,7 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
                 } else {
                     widget_input = gtk_entry_new();
                 }
-                g_debug("Found type=%s: id=%s  max_length=%d", type.c_str(), id.c_str(), max_length);
+                g_debug("Add input type=%s: id=%s  max_length=%d", type.c_str(), id.c_str(), max_length);
                 if (!default_v.empty()) {
                     gtk_editable_set_text(GTK_EDITABLE(widget_input), default_v.c_str());
                 }
@@ -540,7 +540,7 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
             } else if (type == "boolean") {
                 widget_input = gtk_check_button_new();
                 bool default_v = json_object_get_boolean_member_with_default(input_def_obj, "default", false);
-                g_debug("Found type=%s: id=%s default=%d", type.c_str(), id.c_str(), default_v);
+                g_debug("Add input type=%s: id=%s default=%d", type.c_str(), id.c_str(), default_v);
                 gtk_check_button_set_active(GTK_CHECK_BUTTON(widget_input), default_v);
                 value_change_signal_name = "toggled";
             } else if (type == "enum") {
@@ -561,7 +561,7 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
                     enum_values.push_back(STR(json_node_get_string(enum_node)));
                 }
                 string default_v = STR(json_object_get_string_member_with_default(input_def_obj, "default", ""));
-                // g_debug("Found type=%s: id=%s default=%s enume_values: %s", type.c_str(), id.c_str(), default_v.c_str(),
+                // g_debug("Add input type=%s: id=%s default=%s enume_values: %s", type.c_str(), id.c_str(), default_v.c_str(),
                 // JOIN_STRING_VEC(enum_values).c_str());
                 int default_val_idx = -1;
                 if (!default_v.empty()) {
@@ -639,7 +639,7 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
         return nullptr;
     }
 
-    g_debug("this_vpn_editor_widget_factory() Done: %p", editor_obj);
+    g_debug("this_vpn_editor_widget_factory() Done | editor_obj@%p", editor_obj);
     return editor_obj;
 }
 
