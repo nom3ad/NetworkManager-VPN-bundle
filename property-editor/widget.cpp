@@ -473,7 +473,22 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
                     gtk_string_list_append(string_list, v.c_str());
                 }
                 GtkSingleSelection *ss = gtk_single_selection_new(G_LIST_MODEL(string_list));
-                GtkListItemFactory *factory = gtk_signal_list_item_factory_new();
+                const char *item_ui_string =
+                    "<interface>"
+                    " <template class=\"GtkListItem\">"
+                    "   <property name=\"child\">"
+                    "     <object class=\"GtkEditableLabel\">"
+                    "      <binding name=\"text\">"
+                    "        <lookup name=\"string\" type=\"GtkStringObject\">"
+                    "          <lookup name=\"item\">GtkListItem</lookup>"
+                    "        </lookup>"
+                    "      </binding>"
+                    "     </object>"
+                    "   </property>"
+                    " </template>"
+                    "</interface>";
+                GBytes *item_ui_string_bytes = g_bytes_new_static(item_ui_string, strlen(item_ui_string));
+                GtkListItemFactory *factory = gtk_builder_list_item_factory_new_from_bytes(nullptr, item_ui_string_bytes);
                 GtkWidget *listview = gtk_list_view_new(GTK_SELECTION_MODEL(ss), factory);
                 gtk_list_view_set_single_click_activate(GTK_LIST_VIEW(listview), true);
                 gtk_list_view_set_enable_rubberband(GTK_LIST_VIEW(listview), true);
@@ -611,7 +626,7 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
                                  signal_name.c_str(),
                                  G_CALLBACK(+[](GObject *object, gpointer a, gpointer b, gpointer c, gpointer d) -> void {
                                      string object_type = G_OBJECT_TYPE_NAME(object);
-                                     g_warning("inside callback %s o=%p a=%p b=%p c=%p d=%p", object_type.c_str(), object, a, b, c, d);
+                                     g_debug("inside callback %s o=%p a=%p b=%p c=%p d=%p", object_type.c_str(), object, a, b, c, d);
                                      gpointer user_data = a;
                                      if (object_type == "GtkDropDown") { // gtk4
                                          user_data = b;

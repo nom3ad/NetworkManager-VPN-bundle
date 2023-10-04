@@ -64,7 +64,7 @@ run-auth-dialog:
 
 run-test-gtk4-editor:
 	@set -x; \
-	ninja -C build test-gtk4-editor; \
+	ninja -C build test-gtk4-editor && \
 	VPN_PROVIDER=$$provider G_MESSAGES_DEBUG=all ./build/bin/test-gtk4-editor
 
 dev-install-watch:
