@@ -16,3 +16,5 @@ struct _ThisVPNEditorPluginClass {
 GType this_vpn_editor_plugin_get_type(void);
 
 typedef NMVpnEditor *(*ThisVPNEditorWidgetFactory)(NMVpnEditorPlugin *plugin, NMConnection *connection, GError **error);
+
+extern "C" NMVpnEditorPlugin *nm_vpn_editor_plugin_factory(GError **error);

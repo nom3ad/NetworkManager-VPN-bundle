@@ -464,7 +464,7 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
                     }
                 }
 #if GTK_CHECK_VERSION(4, 0, 0)
-                GtkStringList *string_list = gtk_string_list_new(NULL);
+                GtkStringList *string_list = gtk_string_list_new(nullptr);
                 for (const string v : default_values) {
                     gtk_string_list_append(string_list, v.c_str());
                 }
