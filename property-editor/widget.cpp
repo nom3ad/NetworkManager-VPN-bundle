@@ -483,11 +483,11 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
                                  "setup",
                                  G_CALLBACK(+[](GtkListItemFactory *factory, GtkListItem *listitem, gpointer user_data) {
                                      GtkStringList *string_list = (GtkStringList *)user_data;
-                                     GtkWidget *w = gtk_entry_new();
+                                     GtkWidget *w = gtk_editable_label_new("");
                                      gtk_list_item_set_child(listitem, w);
                                      g_signal_connect(w,
-                                                      "changed",
-                                                      G_CALLBACK(+[](GtkWidget *w, gpointer user_data) {
+                                                      "notify::editing",
+                                                      G_CALLBACK(+[](GtkWidget *w, gpointer _, gpointer user_data) {
                                                           GtkStringList *string_list = (GtkStringList *)((Pair *)user_data)->first;
                                                           GtkListItem *listitem = (GtkListItem *)((Pair *)user_data)->second;
                                                           const char *text = gtk_editable_get_text(GTK_EDITABLE(w));
@@ -496,6 +496,7 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
                                                           additions[1] = nullptr;
                                                           const int pos = gtk_list_item_get_position(GTK_LIST_ITEM(listitem));
                                                           const char *prev_text = gtk_string_list_get_string(string_list, pos);
+                                                          //   g_debug("change : %s -> %s %d", prev_text, text, pos);
                                                           if (strcmp(prev_text, text) == 0) {
                                                               return;
                                                           }
