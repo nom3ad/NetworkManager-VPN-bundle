@@ -1,6 +1,6 @@
 {
     "id": "weron",
-    "label": "Weron Overlay Network",
+    "label": "Bundle: weron Overlay Network",
     "description": "Overlay networks based on WebRTC (https://github.com/pojntfx/weron)",
     "multi-connections-support": true,
     "editor": [

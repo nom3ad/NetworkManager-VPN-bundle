@@ -1,7 +1,7 @@
 {
     "id": "n2n",
-    "label": "N2n Peer-to-peer VPN",
-    "description": "Peer-to-peer VPN  (https://github.com/ntop/n2n)",
+    "label": "Bundle: n2n peer-to-peer VPN",
+    "description": "Peer-to-peer VPN (https://github.com/ntop/n2n)",
     "multi-connections-support": true,
     "editor": [
         {

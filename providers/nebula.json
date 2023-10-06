@@ -1,6 +1,6 @@
 {
     "id": "nebula",
-    "label": "Nebula Overlay Network",
+    "label": "Bundle: Nebula overlay network",
     "description": "Overlay networking (https://github.com/slackhq/nebula)",
     "multi-connections-support": true,
     "editor": [

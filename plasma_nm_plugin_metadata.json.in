@@ -16,7 +16,7 @@
             }
         ],
         "Category": "VPNService",
-        "Description": "Manage @THIS_VPN_PROVIDER_LABEL@ connection",
-        "Description[es]": "Manage @THIS_VPN_PROVIDER_LABEL@ connection"
+        "Description": "@THIS_VPN_PROVIDER_DESCRIPTION@",
+        "Description[es]": "@THIS_VPN_PROVIDER_DESCRIPTION@"
     }
 }

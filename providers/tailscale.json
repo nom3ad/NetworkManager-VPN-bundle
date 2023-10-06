@@ -1,7 +1,7 @@
 {
     "id": "tailscale",
-    "label": "Tailscale VPN",
-    "description": "Tailscale is a mesh VPN. (https://tailscale.com/)",
+    "label": "Bundle: Tailscale VPN",
+    "description": "Zero config VPN. (https://tailscale.com/)",
     "multi-connections-support": true,
     "editor": [
         {
