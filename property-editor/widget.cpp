@@ -28,7 +28,9 @@ typedef void GtkRoot;
 #define gtk_check_button_get_active(button) gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(button))
 #define gtk_check_button_set_active(button, active) gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), active)
 #define gtk_box_append(box, widget) gtk_box_pack_start(box, widget, false, false, 0)
-
+#define gtk_scrolled_window_new_() gtk_scrolled_window_new(nullptr, nullptr)
+#define gtk_scrolled_window_set_child(scrolled_window, child) gtk_container_add(GTK_CONTAINER(scrolled_window), child)
+#define gtk_frame_set_child(scrolled_window, child) gtk_container_add(GTK_CONTAINER(scrolled_window), child)
 #define GTK_TYPE_PASSWORD_ENTRY GTK_TYPE_ENTRY
 
 #define gtk_button_new_from_icon_name_(name) gtk_button_new_from_icon_name(name, GTK_ICON_SIZE_BUTTON)
@@ -118,6 +120,8 @@ struct Pair {
     void *first;
     void *second;
 };
+
+#define gtk_scrolled_window_new_() gtk_scrolled_window_new()
 
 #define gtk_dropdown_text_get_active_text(widget)                                                                                                              \
     ({                                                                                                                                                         \
@@ -366,10 +370,12 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
         return nullptr;
     }
     JsonArray *section_array = json_node_get_array(json_parser_get_root(parser));
-
+    GtkScrolledWindow *scrolled_window = GTK_SCROLLED_WINDOW(gtk_scrolled_window_new_());
     GtkWidget *box_main = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
     set_prefixed_widget_name(box_main, "MainBox");
-    // margin set
+    gtk_scrolled_window_set_child(scrolled_window, box_main);
+
+    GtkWidget *main_widget = (GtkWidget *)(scrolled_window);
 
     for (int i = 0; i < json_array_get_length(section_array); i++) {
         JsonNode *section_node = json_array_get_element(section_array, i);
@@ -379,6 +385,7 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
             return nullptr;
         }
         string section_title = STR(json_object_get_string_member_with_default(section_obj, "section", "<unnamed>"));
+        string section_description = STR(json_object_get_string_member_with_default(section_obj, "description", ""));
         g_debug("Processing section_obj: section_title=%s", section_title.c_str());
 
         JsonArray *input_def_array = json_object_get_array_member(section_obj, "inputs");
@@ -386,11 +393,14 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
             g_set_error(error, EDITOR_PLUGIN_ERROR, 0, "THIS_VPN_PROVIDER_INPUT_FORM_JSON:  Missing inputs array obj at index %d", i);
             return nullptr;
         }
-
         g_debug("Creating label for section: %s", section_title.c_str());
         GtkWidget *lbl_section = gtk_label_new(section_title.c_str());
         set_prefixed_widget_name(lbl_section, section_title + "Label");
-        gtk_label_set_markup(GTK_LABEL(lbl_section), ("<b>" + section_title + "</b>").c_str());
+        string section_markup = ("<b>" + section_title + "</b>");
+        if (!section_description.empty()) {
+            section_markup += "\n" + section_description;
+        }
+        gtk_label_set_markup(GTK_LABEL(lbl_section), section_markup.c_str());
         gtk_widget_set_halign(lbl_section, GTK_ALIGN_START);
         gtk_widget_set_margin_top(lbl_section, 10);
         gtk_box_append(GTK_BOX(box_main), lbl_section);
@@ -418,7 +428,7 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
             }
             string id = STR(json_object_get_string_member_with_default(input_def_obj, "id", ""));
             string type = STR(json_object_get_string_member_with_default(input_def_obj, "type", "string"));
-            string label = STR(json_object_get_string_member_with_default(input_def_obj, "label", id.c_str()));
+            string label = STR(json_object_get_string_member_with_default(input_def_obj, "label", ""));
             string description = STR(json_object_get_string_member_with_default(input_def_obj, "description", ""));
             if (id.empty()) {
                 g_set_error(error,
@@ -465,11 +475,14 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
                 // gint64 min_length = json_object_get_int_member(input_def_obj, "min_length");
             } else if (type == "array") {
                 vector<string> default_values;
-                JsonArray *default_value_array = json_object_get_array_member(input_def_obj, "default");
-                if (default_value_array) {
-                    for (int k = 0; k < json_array_get_length(default_value_array); k++) {
-                        JsonNode *n = json_array_get_element(default_value_array, k);
-                        default_values.push_back(STR(json_node_get_string(n)));
+                // check if node exists
+                if (json_object_has_member(input_def_obj, "default")) {
+                    JsonArray *default_value_array = json_object_get_array_member(input_def_obj, "default");
+                    if (default_value_array) {
+                        for (int k = 0; k < json_array_get_length(default_value_array); k++) {
+                            JsonNode *n = json_array_get_element(default_value_array, k);
+                            default_values.push_back(STR(json_node_get_string(n)));
+                        }
                     }
                 }
 #if GTK_CHECK_VERSION(4, 0, 0)
@@ -544,6 +557,7 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
 
                 GtkCellRenderer *cell_renderer = gtk_cell_renderer_text_new();
                 g_object_set(cell_renderer, "editable", true, nullptr);
+                g_object_set(cell_renderer, "ellipsize", PANGO_ELLIPSIZE_END, nullptr);
                 g_signal_connect(cell_renderer,
                                  "edited",
                                  G_CALLBACK(+[](GtkCellRendererText *cell, const gchar *path_string, const gchar *new_text, gpointer data) {
@@ -564,8 +578,14 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
 #endif
 
                 GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
+                GtkScrolledWindow *list_view_scrollbale_container = GTK_SCROLLED_WINDOW(gtk_scrolled_window_new_());
+                gtk_scrolled_window_set_policy(list_view_scrollbale_container, GTK_POLICY_AUTOMATIC, GTK_POLICY_NEVER);
+                gtk_scrolled_window_set_child(list_view_scrollbale_container, listview);
+                GtkWidget *frm = gtk_frame_new(nullptr);
+                gtk_frame_set_child(GTK_FRAME(frm), (GtkWidget *)list_view_scrollbale_container);
+                gtk_box_append(GTK_BOX(vbox), frm);
+
                 GtkWidget *hbox_buttons = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
-                gtk_box_append(GTK_BOX(vbox), listview);
                 gtk_box_append(GTK_BOX(vbox), hbox_buttons);
 
                 GtkWidget *add_button = gtk_button_new_from_icon_name_("list-add-symbolic");
@@ -680,23 +700,29 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
                                  (new ChangeSignalContext{.widget = widget_input, .editor = editor_obj, .signal_name = signal_name}));
             }
 
-            GtkWidget *lbl_input = gtk_label_new(label.c_str());
-            set_prefixed_widget_name(lbl_input, id + ":label");
-            gtk_label_set_use_markup(GTK_LABEL(lbl_input), true);
-            gtk_widget_set_halign(lbl_input, GTK_ALIGN_START);
-            gtk_widget_set_tooltip_text(lbl_input, description.c_str());
-            gtk_widget_set_margin_start(lbl_input, 10);
+            GtkWidget *lbl_input = nullptr;
+            if (!label.empty()) {
+                lbl_input = gtk_label_new(label.c_str());
+                set_prefixed_widget_name(lbl_input, id + ":label");
+                gtk_label_set_use_markup(GTK_LABEL(lbl_input), true);
+                gtk_widget_set_halign(lbl_input, GTK_ALIGN_START);
+                gtk_widget_set_tooltip_text(lbl_input, description.c_str());
+                gtk_widget_set_margin_start(lbl_input, 10);
+            }
 
             if (widget_input_holder == nullptr) {
                 widget_input_holder = widget_input;
             } else {
-                gtk_widget_set_valign(lbl_input, GTK_ALIGN_START);
-                gtk_widget_set_margin_top(lbl_input, 5);
+                if (lbl_input) {
+                    gtk_widget_set_valign(lbl_input, GTK_ALIGN_START);
+                    gtk_widget_set_margin_top(lbl_input, 5);
+                }
             }
-
             gtk_grid_set_row_baseline_position(GTK_GRID(grid_section), j, GTK_BASELINE_POSITION_BOTTOM);
-            gtk_grid_attach(GTK_GRID(grid_section), lbl_input, 0, j, 1, 1);
-            gtk_grid_attach(GTK_GRID(grid_section), widget_input_holder, 1, j, 1, 1);
+            if (lbl_input) {
+                gtk_grid_attach(GTK_GRID(grid_section), lbl_input, 0, j, 1, 1);
+            }
+            gtk_grid_attach(GTK_GRID(grid_section), widget_input_holder, lbl_input ? 1 : 0, j, 1, 1);
 
             InputItem input_item = {};
             input_item.widget = widget_input;
@@ -705,7 +731,7 @@ G_MODULE_EXPORT NMVpnEditor *this_vpn_editor_widget_factory(G_GNUC_UNUSED NMVpnE
             priv->input_widgets[id] = input_item;
         }
     }
-    priv->widget = box_main;
+    priv->widget = main_widget;
     g_object_unref(parser);
 
     ////////////////////////////////////////////////////////////////////////

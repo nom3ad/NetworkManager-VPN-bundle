@@ -71,18 +71,33 @@ VPNProviderSettingView::VPNProviderSettingView(const NetworkManager::VpnSetting:
     qDBusRegisterMetaType<NMStringMap>();
 
     QWidget *mainView = this;
-    mainView->setLayout(new QFormLayout(mainView));
+    mainView->setLayout(new QVBoxLayout(mainView));
 
     QJsonDocument inputFormJson = QJsonDocument::fromJson(QString(THIS_VPN_PROVIDER_INPUT_FORM_JSON).toUtf8());
-
+    // this->setStyleSheet("* { border: 1px dashed red; }");
     for (const QJsonValue sectionValue : inputFormJson.array()) {
         QString sectionTitle = sectionValue.toObject()["section"].toString();
+        QString sectionDescription = sectionValue.toObject()["description"].toString();
         QGroupBox *gb = new QGroupBox(this);
+        gb->setContentsMargins(0, 0, 0, 0);
         gb->setTitle(tr2i18n(sectionTitle.toUtf8(), nullptr));
         mainView->layout()->addWidget(gb);
 
-        QFormLayout *sectionLayout = new QFormLayout(this);
-        gb->setLayout(sectionLayout);
+        QVBoxLayout *sectionOuterLayout = new QVBoxLayout(this);
+        gb->setLayout(sectionOuterLayout);
+        if (!sectionDescription.isEmpty()) {
+            QLabel *lbl = new QLabel(this);
+            lbl->setText(tr2i18n(sectionDescription.toUtf8(), nullptr));
+            lbl->setWordWrap(true);
+            lbl->setContentsMargins(10, 0, 0, 0);
+            sectionOuterLayout->addWidget(lbl);
+            sectionOuterLayout->setContentsMargins(0, 0, 0, 0);
+        }
+        QFrame *sectionFormFrame = new QFrame(this);
+        QFormLayout *sectionFormLayout = new QFormLayout(sectionFormFrame);
+        sectionFormLayout->setContentsMargins(0, 0, 0, 0);
+        sectionFormFrame->setLayout(sectionFormLayout);
+        sectionOuterLayout->addWidget(sectionFormFrame);
 
         QJsonArray inputDefJsonArray = sectionValue.toObject()["inputs"].toArray();
 
@@ -90,7 +105,7 @@ VPNProviderSettingView::VPNProviderSettingView(const NetworkManager::VpnSetting:
             QJsonObject defObj = inputDefJsonArray[i].toObject();
             QString id = defObj["id"].toString();
             QString type = defObj["type"].toString("string");
-            QString label = defObj["label"].toString(id);
+            QString label = defObj["label"].toString("");
             QString description = defObj["description"].toString();
             bool isRequired = defObj.value("required").toBool(false);
             QWidget *inputWidget = nullptr;
@@ -152,21 +167,23 @@ VPNProviderSettingView::VPNProviderSettingView(const NetworkManager::VpnSetting:
                     }
                 }
                 lv->setModel(model);
-                QFrame *fieldFrame = new QFrame(this);
-                fieldFrame->setLayout(new QVBoxLayout(fieldFrame));
-                fieldFrame->setObjectName("frm" + id);
-                fieldFrame->setFrameShape(QFrame::StyledPanel);
-                fieldFrame->setFrameShadow(QFrame::Raised);
-                fieldFrame->layout()->addWidget(lv);
+                QFrame *parentFrame = new QFrame(this);
+                parentFrame->setContentsMargins(0, 0, 0, 0);
+                parentFrame->setLayout(new QHBoxLayout(parentFrame));
+                parentFrame->setObjectName("frm" + id);
+                parentFrame->layout()->addWidget(lv);
 
                 QFrame *btnFrame = new QFrame(this);
-                btnFrame->setLayout(new QHBoxLayout(btnFrame));
+                btnFrame->setLayout(new QVBoxLayout(btnFrame));
                 QPushButton *btnAdd = new QPushButton("Add", btnFrame);
+                btnAdd->setIcon(QIcon::fromTheme("list-add"));
                 connect(btnAdd, &QPushButton::clicked, [model, defaultAddValue]() {
                     model->insertRow(model->rowCount());
                     model->setData(model->index(model->rowCount() - 1), defaultAddValue);
                 });
+                btnFrame->layout()->addWidget(btnAdd);
                 QPushButton *btnRemove = new QPushButton("Remove", btnFrame);
+                btnRemove->setIcon(QIcon::fromTheme("list-remove"));
                 btnRemove->setEnabled(model->rowCount() > 0);
                 connect(btnRemove, &QPushButton::clicked, [lv, model]() {
                     model->removeRow(lv->currentIndex().row());
@@ -177,12 +194,11 @@ VPNProviderSettingView::VPNProviderSettingView(const NetworkManager::VpnSetting:
                 connect(model, &QStringListModel::rowsInserted, [btnRemove, model](const QModelIndex &, int, int) {
                     btnRemove->setEnabled(model->rowCount() > 0);
                 });
-
-                btnFrame->layout()->addWidget(btnAdd);
                 btnFrame->layout()->addWidget(btnRemove);
-                fieldFrame->layout()->addWidget(btnFrame);
+                parentFrame->layout()->addWidget(btnFrame);
+
                 inputWidget = lv;
-                fieldWidget = fieldFrame;
+                fieldWidget = parentFrame;
 
             } else if (type == "boolean") {
                 QCheckBox *cb = new QCheckBox(this);
@@ -218,12 +234,16 @@ VPNProviderSettingView::VPNProviderSettingView(const NetworkManager::VpnSetting:
             if (fieldWidget == nullptr) {
                 fieldWidget = inputWidget;
             }
-            QLabel *lbl = new QLabel(this);
-            lbl->setObjectName("lbl_" + id);
-            lbl->setText(tr2i18n(label.toUtf8(), nullptr));
-            lbl->setToolTip(tr2i18n(description.toUtf8(), nullptr));
-            sectionLayout->setWidget(i, QFormLayout::LabelRole, lbl);
-            sectionLayout->setWidget(i, QFormLayout::FieldRole, fieldWidget);
+            if (!label.isEmpty()) {
+                QLabel *lbl = new QLabel(this);
+                lbl->setObjectName("lbl_" + id);
+                lbl->setText(tr2i18n(label.toUtf8(), nullptr));
+                lbl->setToolTip(tr2i18n(description.toUtf8(), nullptr));
+                sectionFormLayout->setWidget(i, QFormLayout::LabelRole, lbl);
+                sectionFormLayout->setWidget(i, QFormLayout::FieldRole, fieldWidget);
+            } else {
+                sectionFormLayout->setWidget(i, QFormLayout::SpanningRole, fieldWidget);
+            }
         }
     }
     //////////////////////

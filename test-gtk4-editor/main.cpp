@@ -67,7 +67,7 @@ static void launch_editor(const char *provider, GtkApplication *app)
     gtk_widget_set_margin_end(editor_widget, 12);
     GtkWidget *editor_window = gtk_application_window_new(app);
     gtk_window_set_title(GTK_WINDOW(editor_window), g_strdup_printf("ViewOnly GTK4 editor for %s", provider));
-    gtk_window_set_default_size(GTK_WINDOW(editor_window), 600, 0);
+    gtk_window_set_default_size(GTK_WINDOW(editor_window), 600, 800);
 
     gtk_window_set_child(GTK_WINDOW(editor_window), editor_widget);
     gtk_widget_set_visible(editor_window, true);

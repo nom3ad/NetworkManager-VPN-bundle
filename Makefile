@@ -68,6 +68,8 @@ run-test-gtk4-editor:
 	VPN_PROVIDER=$$provider G_MESSAGES_DEBUG=all ./build/bin/test-gtk4-editor
 
 dev-install-watch:
+	@set -x;\
+	[ -n "$$provider" ] && export VPN_BUNDLE_INCLUDED_PROVIDERS=$$provider; \
 	while inotifywait --recursive --event close_write,moved_to,create common/ plugin-service/ providers/ property-editor/ plasma-nm-applet-ui/ auth-dialog/ CMakeLists.txt *.in; \
 	do \
 		make configure && make all && sudo make install ||  echo -e "\e[31mBuild failed!\e[0m"; \
