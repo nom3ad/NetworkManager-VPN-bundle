@@ -224,8 +224,10 @@ def find_valid_if_name(s: str):
     return ifname
 
 
-def is_interface_ready(iface: str):
+def is_interface_ready(iface: str, check_for_address=True):
     if iface in netifaces.interfaces():
+        if not check_for_address:
+            return True
         if get_iface_addresses(iface):
             return True
         return False
@@ -324,8 +326,19 @@ def get_network_interfaces_by_ip(ip: AnyIPAddr | str) -> list[str]:
     return interfaces_with_ip
 
 
+class MissingKeyError(KeyError):
+    def __repr__(self) -> str:
+        return f"Missing key {self.args[0]}"
+
+
 def getter(d: dict):
-    def _fn(k: str, default=None):
-        return d.get(k, "").strip() or default
+    def _fn(k: str, default=None, split=None):
+        v = d.get(k, "").strip() or default
+        if v is ...:
+            raise MissingKeyError(k)
+        if split:
+            split = re.compile(f"[{split}]")
+            return [x.strip() for x in re.split(split, v) if x.strip()]
+        return v
 
     return _fn

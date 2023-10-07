@@ -112,58 +112,66 @@ class VpnDBUSService(ServiceBase):
                 # https://cgit.freedesktop.org/NetworkManager/NetworkManager/tree/libnm-core/nm-dbus-interface.h?id=ba6c2211e8f6aebc5e5b07b77ffee938593980a6
                 # https://gitlab.freedesktop.org/NetworkManager/NetworkManager/-/blob/main/src/libnm-core-public/nm-vpn-dbus-interface.h
                 general_config = {
-                    # VPN interface name (tun0, tap0, etc)
+                    ## VPN interface name (tun0, tap0, etc)
                     "tundev": Variant("s", result.dev),
-                    # "pac": Variant("s", ""),  # Proxy PAC, string
-                    #  Login message
+                    ## Proxy PAC, string
+                    # "pac": Variant("s", ""),
+                    ## Login message
                     "banner": Variant("s", result.banner),
-                    #  uint32  array of uint8: IP address of the public external VPN gateway (network byte order)
-                    "gateway": Variant("u", ipv4_to_u32(result.gateway)),
-                    # uint32: Maximum Transfer Unit that the VPN interface should use
+                    ## uint32  array of uint8: IP address of the public external VPN gateway (network byte order)
+                    "gateway": Variant("u", ipv4_to_u32(result.gateway)) if result.gateway else None,
+                    ## uint32: Maximum Transfer Unit that the VPN interface should use
                     # "mtu": Variant("u", 1433),
-                    #  Has IP4 configuratio
+                    ## Has IP4 configuratio
                     "has-ip4": Variant("b", result.ipv4 is not None),
-                    # Has IP6 configuratio  boolean
+                    ## Has IP6 configuratio  boolean
                     "has-ip6": Variant("b", result.ipv6 is not None),
-                    # # If %TRUE the VPN plugin can persist/reconnect the connection over link changes and VPN server dropouts.
-                    # "can-persist":  Variant("b", False)
+                    ## If %TRUE the VPN plugin can persist/reconnect the connection over link changes and VPN server dropouts.
+                    "can-persist": Variant("b", result.can_persist),
                 }
                 self.emit("Config", general_config)
                 if result.ipv4:
                     ip4_config = {
-                        # IP address of the internal gateway of the subnet the VPN interface is Fon, if the VPN uses subnet configuration (network byte order)
+                        ## IP address of the internal gateway of the subnet the VPN interface is Fon, if the VPN uses subnet configuration (network byte order)
                         # "internal-gateway":  Variant("u", 0)
-                        # Internal IP address of the local VPN interface (network byte order) # XXX Workaround: WTF? why byteorder is not respected.
+                        ## Internal IP address of the local VPN interface (network byte order) # XXX Workaround: WTF? why byteorder is not respected.
                         "address": Variant("u", ipv4_to_u32(result.ipv4.ip)),
-                        "prefix": Variant(
-                            "u", result.ipv4.network.prefixlen
-                        ),  # uint32: IP prefix of the VPN interface; 1 - 32 inclusive
-                        # IP addresses of DNS servers for the VPN (network byte order) Array<uint32>:
+                        ## uint32: IP prefix of the VPN interface; 1 - 32 inclusive
+                        "prefix": Variant("u", result.ipv4.network.prefixlen),
+                        ## IP addresses of DNS servers for the VPN (network byte order) Array<uint32>:
                         "dns": Variant("au", [ipv4_to_u32(i) for i in result.dns if i.version == 4]),
-                        # IP addresses of NBNS/WINS servers for the VPN (network byte order) Array<uint32>:
+                        ## IP addresses of NBNS/WINS servers for the VPN (network byte order) Array<uint32>:
                         # "nbns": Variant("au", []),
-                        # # uint32: Message Segment Size that the VPN interface should use
+                        ## uint32: Message Segment Size that the VPN interface should use
                         # "mss": Variant("u", 0),
-                        # # string: DNS domain name
+                        ## string: DNS domain name
                         # "domain": Variant("s", ""),
-                        # # array of strings: DNS domain names
+                        ## array of strings: DNS domain names
                         # "domains": Variant("as", []),
-                        # # custom routes the client should apply, in the format used
-                        # "routes":
-                        # # ether the previous IP4 routing configuration should be preserved.
+                        ## custom routes the client should apply, in the format used by nm_utils_ip4_routes_to/from_gvalue  (Array<(dest,prefix,next_hop,metric)>)
+                        "routes": Variant(
+                            "aau",
+                            [
+                                [ipv4_to_u32(r.network_address), r.prefixlen, 0, 0]
+                                for r in result.routes
+                                if r.version == 4
+                            ],
+                        ),
+                        ## whether the previous IP4 routing configuration should be preserved.
                         # "preserve-routes":  Variant("b", False)
-                        # boolean: prevent this VPN connection from ever getting the default route
+                        ## prevent this VPN connection from ever getting the default route
                         "never-default": Variant("b", result.never_default_route),
                     }
                     self.emit("Ip4Config", ip4_config)
                 if result.ipv6:
                     ip6_config = {
-                        # /* array of uint8: internal IP address of the local VPN interface (network byte order) */
+                        ## array of uint8: internal IP address of the local VPN interface (network byte order)
                         "address": Variant("ay", ipv6_to_u8_slice(result.ipv6.ip)),
-                        # /* uint32: prefix length of the VPN interface; 0 - 128 inclusive */
+                        ## uint32: prefix length of the VPN interface; 0 - 128 inclusive
                         "prefix": Variant("u", result.ipv6.network.prefixlen),
-                        # /* array of array of uint8: IP addresses of DNS servers for the VPN (network byte order) */
+                        ## array of array of uint8: IP addresses of DNS servers for the VPN (network byte order)
                         "dns": Variant("aay", [ipv6_to_u8_slice(i) for i in result.dns if i.version == 6]),
+                        ## prevent this VPN connection from ever getting the default route
                         "never-default": Variant("b", result.never_default_route),
                     }
                     self.emit("Ip6Config", ip6_config)

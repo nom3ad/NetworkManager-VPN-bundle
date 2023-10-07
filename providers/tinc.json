@@ -1,0 +1,128 @@
+{
+    "id": "tinc",
+    "label": "Bundle: tinc Peer-to-peer VPN",
+    "description": "Peer-to-peer VPN  (https://github.com/gsliepen/tinc)",
+    "multi-connections-support": true,
+    "editor": [
+        {
+            "section": "Basic",
+            "inputs": [
+                {
+                    "id": "node-name",
+                    "type": "string",
+                    "label": "Node name",
+                    "description": "Uniuqe name of node. $HOST will be replaced by gethostname()",
+                    "required": true
+                },
+                {
+                    "id": "rsa-private-key",
+                    "type": "string",
+                    "label": "RSA private key file",
+                    "description": "RSA private key file for this node",
+                    "required": true
+                },
+                {
+                    "id": "cidrs",
+                    "type": "string",
+                    "label": "Host/Subnets Cidrs",
+                    "placeholder": "10.11.12.13/32,192.168.1.0/24",
+                    "description": "Comma separated list of subnet CIDR subnets this node is part of",
+                    "required": true
+                },
+                {
+                    "id": "external-address",
+                    "type": "string",
+                    "label": "External Address",
+                    "placeholder": "host:[port]",
+                    "description": "IP address/hostname of this node on the real network. Port is optional",
+                    "required": true
+                }
+            ]
+        },
+        {
+            "section": "Peers",
+            "description": "name remote-host:port subnet1,subnet2,... key=value,... public-key",
+            "inputs": [
+                {
+                    "id": "peers",
+                    "type": "array",
+                    "required": true
+                }
+            ]
+        },
+        {
+            "section": "Advanced",
+            "inputs": [
+                {
+                    "id": "net_mode",
+                    "type": "enum",
+                    "label": "Virtual network mode",
+                    "description": "Layer 2 (Ethernet)  or Layer 3 (IP) overlay modes",
+                    "values": [
+                        "IP (Layer 3 / TUN)",
+                        "Ethernet (Layer 2 / TAP)"
+                    ],
+                    "default": "IP (Layer 3 / TUN)",
+                    "required": false
+                },
+                {
+                    "id": "dev",
+                    "type": "string",
+                    "label": "TUN/TAP device name",
+                    "description": "Name of TUN/TAP device",
+                    "placeholder": "<based on connection name>",
+                    "required": false
+                },
+                {
+                    "id": "listen-port",
+                    "type": "integer",
+                    "label": "Listening Port",
+                    "description": "Port to listen on. default: 655",
+                    "default": 655,
+                    "min_value": 1,
+                    "max_value": 65535,
+                    "required": false
+                },
+                {
+                    "id": "debug-level",
+                    "type": "integer",
+                    "label": "Log debug level",
+                    "description": "Verbosity level (0 to 5)",
+                    "default": 1,
+                    "min_value": 0,
+                    "max_value": 5,
+                    "required": false
+                },
+                {
+                    "id": "additional-server-conf",
+                    "type": "array",
+                    "label": "Additional server configuration",
+                    "description": "tinc.conf entries to add. key=value format",
+                    "default": [
+                        "PingInterval=60",
+                        "KeyExpire=3600"
+                    ]
+                },
+                {
+                    "id": "additional-host-conf",
+                    "type": "array",
+                    "label": "Additional host configuration",
+                    "description": "host configuration files contain all information needed to establish a connection to those hosts. key=value format",
+                    "default": [
+                        "Compression=0",
+                        "Digest=sha256",
+                        "Cipher=aes-256-cbc"
+                    ]
+                },
+                {
+                    "id": "tincd-bin",
+                    "type": "string",
+                    "label": "tincd binary path",
+                    "description": "path to n2n binary",
+                    "placeholder": "tincd",
+                    "required": false
+                }
+            ]
+        }
+    ]
+}

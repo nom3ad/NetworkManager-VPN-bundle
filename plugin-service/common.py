@@ -129,14 +129,16 @@ VPNConnectionConfiguration = TypedDict(
 
 @dataclass
 class ConnectionResult(ABC):
-    gateway: ipaddress.IPv4Address
-    ipv4: ipaddress.IPv4Interface
+    gateway: ipaddress.IPv4Address = None
+    ipv4: ipaddress.IPv4Interface = None
     ipv6: Optional[ipaddress.IPv6Interface] = None
     dns: tuple[ipaddress.IPv4Address | ipaddress.IPv6Address] = ()
+    routes: tuple[ipaddress.IPv4Network | ipaddress.IPv6Network] = ()
     dev: Optional[str] = None
     mtu: int = None
     banner: str = "Beep Beep!"
     never_default_route: bool = True
+    can_persist: bool = True
 
 
 class VPNConnectionControlBase(ABC):

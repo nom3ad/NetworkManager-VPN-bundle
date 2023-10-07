@@ -71,8 +71,8 @@
                 {
                     "id": "tun-dev",
                     "type": "string",
-                    "label": "TUN/TAP device name",
-                    "description": "Name of TUN/TAP device",
+                    "label": "TUN device name",
+                    "description": "Name of TUN device",
                     "placeholder": "<based on connection name>",
                     "required": false
                 },
