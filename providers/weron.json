@@ -33,7 +33,7 @@
                 {
                     "id": "ips",
                     "type": "string",
-                    "label": "IP Adresses",
+                    "label": "IP Addresss",
                     "description": "Comma-separated list of IP networks to claim an IP address from and and give to the TUN device (i.e. 2001:db8::1/32,192.0.2.1/24)",
                     "required": true
                 },

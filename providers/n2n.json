@@ -34,7 +34,7 @@
                 {
                     "id": "static-ip",
                     "type": "string",
-                    "label": "SataticIP Adresse",
+                    "label": "Static IP Address",
                     "description": "Edge draws IP address from supernode if none provided",
                     "required": false
                 },
